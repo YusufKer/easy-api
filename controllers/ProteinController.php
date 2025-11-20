@@ -58,6 +58,20 @@ class ProteinController {
         
         $name = trim($input['name']);
         
+        // Check if protein already exists
+        $checkQuery = 'SELECT id FROM protein WHERE name = ?';
+        $checkStmt = $this->db->prepare($checkQuery);
+        $checkStmt->execute([$name]);
+        
+        if ($checkStmt->fetch()) {
+            http_response_code(409);
+            echo json_encode([
+                'error' => 'Protein already exists',
+                'name' => $name
+            ]);
+            return;
+        }
+        
         try {
             // Insert into database
             $query = 'INSERT INTO protein (name) VALUES (?)';
