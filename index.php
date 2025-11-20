@@ -2,6 +2,7 @@
 
     require_once 'config.php';
     require_once 'core/Response.php';
+    require_once 'core/Validator.php';
     require_once 'core/Router.php';
     require_once 'controllers/ProteinController.php';
     require_once 'controllers/FlavoursController.php';

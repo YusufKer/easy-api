@@ -33,8 +33,11 @@ class ProteinController {
         $input = json_decode(file_get_contents('php://input'), true);
         
         // Validate input
-        if (!isset($input['name']) || empty(trim($input['name']))) {
-            Response::badRequest('Name is required');
+        $validator = new Validator($input);
+        $validator->required('name')->string()->min(2)->max(100);
+        
+        if ($validator->fails()) {
+            Response::badRequest('Validation failed', $validator->errors());
         }
         
         $name = trim($input['name']);
