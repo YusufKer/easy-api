@@ -12,12 +12,6 @@ class FlavoursController {
         $stmt = $this->db->query($query);
         $flavours = $stmt->fetchAll();
 
-        $response = [
-            'message' => 'Flavour data retrieved successfully',
-            'data' => $flavours,
-            'timestamp' => date('Y-m-d H:i:s')
-        ];
-
-        echo json_encode($response);
+        Response::success('Flavour data retrieved successfully', $flavours);
     }
 }

@@ -56,9 +56,7 @@ class Router {
         }
 
         // 404 Not Found
-        http_response_code(404);
-        echo json_encode([
-            'error' => 'Route not found',
+        Response::notFound('Route not found', [
             'uri' => $requestUri,
             'method' => $requestMethod
         ]);

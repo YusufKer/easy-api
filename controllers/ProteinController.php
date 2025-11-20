@@ -12,13 +12,7 @@ class ProteinController {
         $stmt = $this->db->query($query);
         $proteins = $stmt->fetchAll();
 
-        $response = [
-            'message' => 'Protein data retrieved successfully',
-            'data' => $proteins,
-            'timestamp' => date('Y-m-d H:i:s')
-        ];
-
-        echo json_encode($response);
+        Response::success('Protein data retrieved successfully', $proteins);
     }
 
     public function getById($id) {
@@ -28,18 +22,9 @@ class ProteinController {
         $row = $stmt->fetch();
 
         if($row){
-            $response = [
-                'message' => 'Protein retrieved successfully',
-                'data' => $row,
-                'timestamp' => date('Y-m-d H:i:s')
-            ];
-            echo json_encode($response);
+            Response::success('Protein retrieved successfully', $row);
         } else {
-            http_response_code(404);
-            echo json_encode([
-                'error' => 'Protein not found',
-                'id' => $id
-            ]);
+            Response::notFound('Protein not found', ['id' => $id]);
         }
     }
 
@@ -49,11 +34,7 @@ class ProteinController {
         
         // Validate input
         if (!isset($input['name']) || empty(trim($input['name']))) {
-            http_response_code(400);
-            echo json_encode([
-                'error' => 'Name is required'
-            ]);
-            return;
+            Response::badRequest('Name is required');
         }
         
         $name = trim($input['name']);
@@ -64,12 +45,7 @@ class ProteinController {
         $checkStmt->execute([$name]);
         
         if ($checkStmt->fetch()) {
-            http_response_code(409);
-            echo json_encode([
-                'error' => 'Protein already exists',
-                'name' => $name
-            ]);
-            return;
+            Response::conflict('Protein already exists', ['name' => $name]);
         }
         
         try {
@@ -79,21 +55,12 @@ class ProteinController {
             $stmt->execute([$name]);
             
             $id = $this->db->lastInsertId();
-            http_response_code(201);
-            echo json_encode([
-                'message' => 'Protein created successfully',
-                'data' => [
-                    'id' => $id,
-                    'name' => $name
-                ],
-                'timestamp' => date('Y-m-d H:i:s')
+            Response::created('Protein created successfully', [
+                'id' => $id,
+                'name' => $name
             ]);
         } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode([
-                'error' => 'Failed to create protein',
-                'details' => $e->getMessage()
-            ]);
+            Response::serverError('Failed to create protein', $e->getMessage());
         }
     }
 }

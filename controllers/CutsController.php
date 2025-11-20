@@ -12,12 +12,6 @@ class CutsController {
         $stmt = $this->db->query($query);
         $cuts = $stmt->fetchAll();
 
-        $response = [
-            'message' => 'Cuts data retrieved successfully',
-            'data' => $cuts,
-            'timestamp' => date('Y-m-d H:i:s')
-        ];
-
-        echo json_encode($response);
+        Response::success('Cuts data retrieved successfully', $cuts);
     }
 }
