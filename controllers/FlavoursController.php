@@ -9,13 +9,8 @@ class FlavoursController {
 
     public function index() {
         $query = "SELECT id, name FROM flavour";
-        $result = mysqli_query($this->db, $query);
-
-        if($result){
-            while($row = mysqli_fetch_assoc($result)){
-                $flavours[] = $row;
-            }
-        }
+        $stmt = $this->db->query($query);
+        $flavours = $stmt->fetchAll();
 
         $response = [
             'message' => 'Flavour data retrieved successfully',

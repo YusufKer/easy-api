@@ -9,13 +9,8 @@ class CutsController {
 
     public function index() {
         $query = "SELECT id, name FROM cut";
-        $result = mysqli_query($this->db, $query);
-
-        if($result){
-            while($row = mysqli_fetch_assoc($result)){
-                $cuts[] = $row;
-            }
-        }
+        $stmt = $this->db->query($query);
+        $cuts = $stmt->fetchAll();
 
         $response = [
             'message' => 'Cuts data retrieved successfully',
