@@ -26,7 +26,7 @@ class ProteinController {
         echo json_encode($response);
     }
 
-    public function show($id) {
+    public function getById($id) {
         $query = "SELECT id, name FROM protein WHERE id = ?";
         $stmt = mysqli_prepare($this->db, $query);
         mysqli_stmt_bind_param($stmt, "i", $id);
