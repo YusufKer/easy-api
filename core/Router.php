@@ -41,13 +41,17 @@ class Router {
         $requestUri = strtok($requestUri, '?');
 
         foreach ($this->routes as $route) {
-            if ($route['method'] === $requestMethod && $route['path'] === $requestUri) {
-                $controllerName = $route['controller'];
-                $action = $route['action'];
+            if ($route['method'] === $requestMethod) {
+                $params = $this->matchRoute($route['path'], $requestUri);
                 
-                $controller = new $controllerName($this->db);
-                $controller->$action();
-                return;
+                if ($params !== false) {
+                    $controllerName = $route['controller'];
+                    $action = $route['action'];
+                    
+                    $controller = new $controllerName($this->db);
+                    $controller->$action(...$params);
+                    return;
+                }
             }
         }
 
@@ -58,5 +62,18 @@ class Router {
             'uri' => $requestUri,
             'method' => $requestMethod
         ]);
+    }
+
+    private function matchRoute($routePath, $requestUri) {
+        // Convert route pattern to regex
+        $pattern = preg_replace('/:([a-zA-Z0-9_]+)/', '([^/]+)', $routePath);
+        $pattern = '#^' . $pattern . '$#';
+        
+        if (preg_match($pattern, $requestUri, $matches)) {
+            array_shift($matches); // Remove full match
+            return $matches;
+        }
+        
+        return false;
     }
 }
