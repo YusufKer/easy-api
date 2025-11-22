@@ -1,24 +1,21 @@
 <?php 
 
-    require_once 'config.php';
-    require_once 'core/Response.php';
-    require_once 'core/Validator.php';
-    require_once 'core/Router.php';
-    require_once 'controllers/ProteinController.php';
-    require_once 'controllers/FlavoursController.php';
-    require_once 'controllers/CutsController.php';
+require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/config.php';
 
-    // Set response header to JSON
-    header('Content-Type: application/json');
-    
-    // Get database connection
-    $db = getDbConnection();
+use App\Core\Router;
 
-    // Initialize router
-    $router = new Router($db);
+// Set response header to JSON
+header('Content-Type: application/json');
 
-    // Load route definitions
-    require_once 'routes/api.php';
+// Get database connection
+$db = getDbConnection();
 
-    // Dispatch the request
-    $router->dispatch();
+// Initialize router
+$router = new Router($db);
+
+// Load route definitions
+require_once __DIR__ . '/routes/api.php';
+
+// Dispatch the request
+$router->dispatch();

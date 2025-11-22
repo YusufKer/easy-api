@@ -1,5 +1,9 @@
 <?php
 
+namespace App\Controllers;
+
+use App\Core\Response;
+
 class CutsController {
     private $db;
 

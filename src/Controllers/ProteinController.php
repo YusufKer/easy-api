@@ -1,5 +1,10 @@
 <?php
 
+namespace App\Controllers;
+
+use App\Core\Response;
+use App\Core\Validator;
+
 class ProteinController {
     private $db;
 
