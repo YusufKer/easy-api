@@ -55,6 +55,10 @@ class Response {
         self::error($message, $details, 409);
     }
     
+    public static function unauthorized($message = 'Unauthorized', $details = null) {
+        self::error($message, $details, 401);
+    }
+    
     public static function serverError($message = 'Internal server error', $details = null) {
         self::error($message, $details, 500);
     }
