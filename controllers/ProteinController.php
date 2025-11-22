@@ -16,13 +16,23 @@ class ProteinController {
     }
 
     public function getById($id) {
-        $query = "SELECT id, name FROM protein WHERE id = ?";
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([$id]);
-        $row = $stmt->fetch();
+        $get_protein = "SELECT id, name FROM protein WHERE id = ?";
+        
+        $protein_stmt = $this->db->prepare($get_protein);
+        $protein_stmt->execute([$id]);
+        $protein = $protein_stmt->fetch();
 
-        if($row){
-            Response::success('Protein retrieved successfully', $row);
+        $get_cuts = "SELECT c.id, c.name, pc.price FROM cut c
+                     JOIN protein_cut pc ON c.id = pc.cut_id
+                     WHERE pc.protein_id = ?";
+        
+        $cuts_stmt = $this->db->prepare($get_cuts);
+        $cuts_stmt->execute([$id]);
+        $cuts = $cuts_stmt->fetchAll();
+
+        if($protein){
+            $protein['cuts'] = $cuts;
+            Response::success('Protein retrieved successfully', $protein);
         } else {
             Response::notFound('Protein not found', ['id' => $id]);
         }
