@@ -30,8 +30,17 @@ class ProteinController {
         $cuts_stmt->execute([$id]);
         $cuts = $cuts_stmt->fetchAll();
 
+        $get_flavours = "SELECT f.id, f.name, pf.price FROM flavour f
+                         JOIN protein_flavour pf ON f.id = pf.flavour_id
+                         WHERE pf.protein_id = ?";
+        
+        $flavours_stmt = $this->db->prepare($get_flavours);
+        $flavours_stmt->execute([$id]);
+        $flavours = $flavours_stmt->fetchAll();
+
         if($protein){
             $protein['cuts'] = $cuts;
+            $protein['flavours'] = $flavours;
             Response::success('Protein retrieved successfully', $protein);
         } else {
             Response::notFound('Protein not found', ['id' => $id]);
