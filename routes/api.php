@@ -17,6 +17,9 @@ $router->get('/api/protein/:id', ProteinController::class, 'getById')
 $router->post('/api/protein', ProteinController::class, 'addProtein')
        ->middleware([AuthMiddleware::class]);
 
+$router->delete('/api/protein/:id', ProteinController::class, 'deleteProtein')
+       ->middleware([AuthMiddleware::class]);
+
 // Public routes - no authentication required
 $router->get('/api/flavours', FlavoursController::class, 'index');
 $router->get('/api/cuts', CutsController::class, 'index');

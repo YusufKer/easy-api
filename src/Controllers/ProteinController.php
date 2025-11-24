@@ -90,4 +90,47 @@ class ProteinController {
             Response::serverError('Failed to create protein', $e->getMessage());
         }
     }
+
+    public function deleteProtein($id) {
+        // Check if protein exists
+        $checkQuery = 'SELECT id, name FROM protein WHERE id = ?';
+        $checkStmt = $this->db->prepare($checkQuery);
+        $checkStmt->execute([$id]);
+        $protein = $checkStmt->fetch();
+        
+        if (!$protein) {
+            Response::notFound('Protein not found', ['id' => $id]);
+        }
+        
+        try {
+            // Start transaction for atomic deletion
+            $this->db->beginTransaction();
+            
+            // Delete related records from junction tables
+            $deleteCuts = 'DELETE FROM protein_cut WHERE protein_id = ?';
+            $stmt1 = $this->db->prepare($deleteCuts);
+            $stmt1->execute([$id]);
+            
+            $deleteFlavours = 'DELETE FROM protein_flavour WHERE protein_id = ?';
+            $stmt2 = $this->db->prepare($deleteFlavours);
+            $stmt2->execute([$id]);
+            
+            // Delete the protein itself
+            $deleteProtein = 'DELETE FROM protein WHERE id = ?';
+            $stmt3 = $this->db->prepare($deleteProtein);
+            $stmt3->execute([$id]);
+            
+            // Commit transaction
+            $this->db->commit();
+            
+            Response::success('Protein deleted successfully', [
+                'id' => $id,
+                'name' => $protein['name']
+            ]);
+        } catch (PDOException $e) {
+            // Rollback on error
+            $this->db->rollBack();
+            Response::serverError('Failed to delete protein', $e->getMessage());
+        }
+    }
 }
