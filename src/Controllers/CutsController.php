@@ -105,19 +105,19 @@ class CutsController {
     }
 
     public function deleteCut(Request $request, Response $response, array $args): Response {
-        $id = $args['id'];
+        $cut_id = $args['cut_id'];
         
         // Check if cut exists
         $checkQuery = 'SELECT id, name FROM cut WHERE id = ?';
         $checkStmt = $this->db->prepare($checkQuery);
-        $checkStmt->execute([$id]);
+        $checkStmt->execute([$cut_id]);
         $cut = $checkStmt->fetch();
 
         if (!$cut) {
             $payload = [
                 'success' => false,
                 'error' => 'Cut not found',
-                'details' => ['id' => $id],
+                'details' => ['cut_id' => $cut_id],
                 'timestamp' => date('Y-m-d H:i:s')
             ];
             $response->getBody()->write(json_encode($payload));
@@ -133,12 +133,12 @@ class CutsController {
             // Delete related records from junction tables
             $deleteProteinCut = 'DELETE FROM protein_cut WHERE cut_id = ?';
             $stmt1 = $this->db->prepare($deleteProteinCut);
-            $stmt1->execute([$id]);
+            $stmt1->execute([$cut_id]);
 
             // Delete the cut itself
             $deleteCut = 'DELETE FROM cut WHERE id = ?';
             $stmt3 = $this->db->prepare($deleteCut);
-            $stmt3->execute([$id]);
+            $stmt3->execute([$cut_id]);
 
             // Commit transaction
             $this->db->commit();
@@ -147,7 +147,7 @@ class CutsController {
                 'success' => true,
                 'message' => 'Cut deleted successfully',
                 'data' => [
-                    'id' => $id,
+                    'cut_id' => $cut_id,
                     'name' => $cut['name']
                 ],
                 'timestamp' => date('Y-m-d H:i:s')

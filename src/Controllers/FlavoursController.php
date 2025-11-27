@@ -105,19 +105,19 @@ class FlavoursController {
     }
 
     public function deleteFlavour(Request $request, Response $response, array $args): Response {
-        $id = $args['id'];
+        $flavour_id = $args['flavour_id'];
         
         // Check if flavour exists
         $checkQuery = 'SELECT id, name FROM flavour WHERE id = ?';
         $checkStmt = $this->db->prepare($checkQuery);
-        $checkStmt->execute([$id]);
+        $checkStmt->execute([$flavour_id]);
         $flavour = $checkStmt->fetch();
 
         if (!$flavour) {
             $payload = [
                 'success' => false,
                 'error' => 'Flavour not found',
-                'details' => ['id' => $id],
+                'details' => ['flavour_id' => $flavour_id],
                 'timestamp' => date('Y-m-d H:i:s')
             ];
             $response->getBody()->write(json_encode($payload));
@@ -133,12 +133,12 @@ class FlavoursController {
             // Delete related records from junction tables
             $deleteProteinFlavour = 'DELETE FROM protein_flavour WHERE flavour_id = ?';
             $stmt1 = $this->db->prepare($deleteProteinFlavour);
-            $stmt1->execute([$id]);
+            $stmt1->execute([$flavour_id]);
 
             // Delete the flavour itself
             $deleteFlavour = 'DELETE FROM flavour WHERE id = ?';
             $stmt3 = $this->db->prepare($deleteFlavour);
-            $stmt3->execute([$id]);
+            $stmt3->execute([$flavour_id]);
 
             // Commit transaction
             $this->db->commit();
@@ -147,7 +147,7 @@ class FlavoursController {
                 'success' => true,
                 'message' => 'Flavour deleted successfully',
                 'data' => [
-                    'id' => $id,
+                    'flavour_id' => $flavour_id,
                     'name' => $flavour['name']
                 ],
                 'timestamp' => date('Y-m-d H:i:s')
