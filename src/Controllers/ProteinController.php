@@ -2,8 +2,10 @@
 
 namespace App\Controllers;
 
-use App\Core\Response;
 use App\Core\Validator;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use PDOException;
 
 class ProteinController {
     private $db;
@@ -12,20 +14,42 @@ class ProteinController {
         $this->db = $db;
     }
 
-    public function index() {
+    public function index(Request $request, Response $response): Response {
         $query = "SELECT id, name FROM protein";
         $stmt = $this->db->query($query);
         $proteins = $stmt->fetchAll();
 
-        Response::success('Protein data retrieved successfully', $proteins);
+        $payload = [
+            'success' => true,
+            'message' => 'Protein data retrieved successfully',
+            'data' => $proteins,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+
+        $response->getBody()->write(json_encode($payload));
+        return $response->withHeader('Content-Type', 'application/json');
     }
 
-    public function getById($id) {
-        $get_protein = "SELECT id, name FROM protein WHERE id = ?";
+    public function getById(Request $request, Response $response, array $args): Response {
+        $id = $args['id'];
         
+        $get_protein = "SELECT id, name FROM protein WHERE id = ?";
         $protein_stmt = $this->db->prepare($get_protein);
         $protein_stmt->execute([$id]);
         $protein = $protein_stmt->fetch();
+
+        if (!$protein) {
+            $payload = [
+                'success' => false,
+                'error' => 'Protein not found',
+                'details' => ['id' => $id],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(404);
+        }
 
         $get_cuts = "SELECT c.id, c.name, pc.price FROM cut c
                      JOIN protein_cut pc ON c.id = pc.cut_id
@@ -43,25 +67,38 @@ class ProteinController {
         $flavours_stmt->execute([$id]);
         $flavours = $flavours_stmt->fetchAll();
 
-        if($protein){
-            $protein['cuts'] = $cuts;
-            $protein['flavours'] = $flavours;
-            Response::success('Protein retrieved successfully', $protein);
-        } else {
-            Response::notFound('Protein not found', ['id' => $id]);
-        }
+        $protein['cuts'] = $cuts;
+        $protein['flavours'] = $flavours;
+
+        $payload = [
+            'success' => true,
+            'message' => 'Protein retrieved successfully',
+            'data' => $protein,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+
+        $response->getBody()->write(json_encode($payload));
+        return $response->withHeader('Content-Type', 'application/json');
     }
 
-    public function addProtein(){
-        // Get JSON input
-        $input = json_decode(file_get_contents('php://input'), true);
+    public function addProtein(Request $request, Response $response): Response {
+        $input = $request->getParsedBody();
         
         // Validate input
         $validator = new Validator($input);
         $validator->required('name')->string()->min(2)->max(100);
         
         if ($validator->fails()) {
-            Response::badRequest('Validation failed', $validator->errors());
+            $payload = [
+                'success' => false,
+                'error' => 'Validation failed',
+                'details' => $validator->errors(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(400);
         }
         
         $name = trim($input['name']);
@@ -72,7 +109,16 @@ class ProteinController {
         $checkStmt->execute([$name]);
         
         if ($checkStmt->fetch()) {
-            Response::conflict('Protein already exists', ['name' => $name]);
+            $payload = [
+                'success' => false,
+                'error' => 'Protein already exists',
+                'details' => ['name' => $name],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(409);
         }
         
         try {
@@ -82,16 +128,36 @@ class ProteinController {
             $stmt->execute([$name]);
             
             $id = $this->db->lastInsertId();
-            Response::created('Protein created successfully', [
-                'id' => $id,
-                'name' => $name
-            ]);
+            $payload = [
+                'success' => true,
+                'message' => 'Protein created successfully',
+                'data' => [
+                    'id' => $id,
+                    'name' => $name
+                ],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(201);
         } catch (PDOException $e) {
-            Response::serverError('Failed to create protein', $e->getMessage());
+            $payload = [
+                'success' => false,
+                'error' => 'Failed to create protein',
+                'details' => $e->getMessage(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(500);
         }
     }
 
-    public function deleteProtein($id) {
+    public function deleteProtein(Request $request, Response $response, array $args): Response {
+        $id = $args['id'];
+        
         // Check if protein exists
         $checkQuery = 'SELECT id, name FROM protein WHERE id = ?';
         $checkStmt = $this->db->prepare($checkQuery);
@@ -99,7 +165,16 @@ class ProteinController {
         $protein = $checkStmt->fetch();
         
         if (!$protein) {
-            Response::notFound('Protein not found', ['id' => $id]);
+            $payload = [
+                'success' => false,
+                'error' => 'Protein not found',
+                'details' => ['id' => $id],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(404);
         }
         
         try {
@@ -123,14 +198,30 @@ class ProteinController {
             // Commit transaction
             $this->db->commit();
             
-            Response::success('Protein deleted successfully', [
-                'id' => $id,
-                'name' => $protein['name']
-            ]);
+            $payload = [
+                'success' => true,
+                'message' => 'Protein deleted successfully',
+                'data' => [
+                    'id' => $id,
+                    'name' => $protein['name']
+                ],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response->withHeader('Content-Type', 'application/json');
         } catch (PDOException $e) {
             // Rollback on error
             $this->db->rollBack();
-            Response::serverError('Failed to delete protein', $e->getMessage());
+            $payload = [
+                'success' => false,
+                'error' => 'Failed to delete protein',
+                'details' => $e->getMessage(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(500);
         }
     }
 }

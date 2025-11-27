@@ -2,34 +2,55 @@
 
 namespace App\Middleware;
 
-use App\Core\Middleware\MiddlewareInterface;
-use App\Core\Request;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Server\MiddlewareInterface;
+use Slim\Psr7\Response as SlimResponse;
 
 class AuthMiddleware implements MiddlewareInterface {
     
-    public function handle(Request $request, callable $next) {
+    public function process(Request $request, RequestHandler $handler): Response {
         // TODO: Implement real authentication logic
         // For now, we'll just log that auth middleware ran and allow all requests
         
         // Example of what you'd do in production:
-        // $token = $request->header('Authorization');
+        // $token = $request->getHeaderLine('Authorization');
         // 
-        // if (!$token) {
-        //     Response::unauthorized('Missing authentication token');
+        // if (empty($token)) {
+        //     $response = new SlimResponse();
+        //     $payload = [
+        //         'success' => false,
+        //         'error' => 'Missing authentication token',
+        //         'timestamp' => date('Y-m-d H:i:s')
+        //     ];
+        //     $response->getBody()->write(json_encode($payload));
+        //     return $response
+        //         ->withHeader('Content-Type', 'application/json')
+        //         ->withStatus(401);
         // }
         // 
         // if (!$this->isValidToken($token)) {
-        //     Response::unauthorized('Invalid or expired token');
+        //     $response = new SlimResponse();
+        //     $payload = [
+        //         'success' => false,
+        //         'error' => 'Invalid or expired token',
+        //         'timestamp' => date('Y-m-d H:i:s')
+        //     ];
+        //     $response->getBody()->write(json_encode($payload));
+        //     return $response
+        //         ->withHeader('Content-Type', 'application/json')
+        //         ->withStatus(401);
         // }
         // 
         // Attach user to request for use in controllers
-        // $request->user = $this->getUserFromToken($token);
+        // $request = $request->withAttribute('user', $this->getUserFromToken($token));
         
         // For now: just pass through
-        error_log("AuthMiddleware: Request to {$request->uri()} - Currently allowing all requests");
+        error_log("AuthMiddleware: Request to {$request->getUri()->getPath()} - Currently allowing all requests");
         
-        // Call the next middleware or controller
-        return $next($request);
+        // Continue to next middleware or controller
+        return $handler->handle($request);
     }
     
     /**
