@@ -15,8 +15,9 @@ $app->group('/api', function (RouteCollectorProxy $group) {
     $group->post('/protein', [ProteinController::class, 'addProtein']);
     $group->delete('/protein/{protein_id}', [ProteinController::class, 'deleteProtein']);
     $group->post('/protein/{protein_id}/flavours', [ProteinController::class, 'addFlavourToProtein']);
+    $group->delete('/protein/{protein_id}/flavours', [ProteinController::class, 'removeFlavourFromProtein']);
     $group->post('/protein/{protein_id}/cuts', [ProteinController::class, 'addCutToProtein']);
-    
+
     // Cuts routes
     $group->get('/cuts', [CutsController::class, 'index']);
     $group->post('/cuts', [CutsController::class, 'addCut']);

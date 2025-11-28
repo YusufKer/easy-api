@@ -261,6 +261,114 @@ class ProteinController {
         }
     }
 
+    public function removeFlavourFromProtein(Request $request, Response $response, array $args): Response {
+        $protein_id = $args['protein_id'];
+        $input = $request->getParsedBody();
+        $validator = new Validator($input);
+        $validator->required('flavour_id')->integer();
+
+        if($validator->fails()) {
+            $payload = [
+                'success' => false,
+                'error' => 'Validation failed',
+                'details' => $validator->errors(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(400);
+        }
+
+        $flavour_id = $input['flavour_id'];
+
+        $checkProteinQuery = 'SELECT id FROM protein WHERE id = ?';
+        $checkProteinStmt = $this->db->prepare($checkProteinQuery);
+        $checkProteinStmt->execute([$protein_id]);
+        if (!$checkProteinStmt->fetch()) {
+            $payload = [
+                'success' => false,
+                'error' => 'Protein not found',
+                'details' => ['id' => $protein_id],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(404);
+        }
+
+        $checkFlavourQuery = 'SELECT id FROM flavour WHERE id = ?';
+        $checkFlavourStmt = $this->db->prepare($checkFlavourQuery);
+        $checkFlavourStmt->execute([$flavour_id]);
+        if (!$checkFlavourStmt->fetch()) {
+            $payload = [
+                'success' => false,
+                'error' => 'Flavour not found',
+                'details' => ['id' => $flavour_id],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(404);
+        }
+
+        $checkIfLinkedQuery = 'SELECT id FROM protein_flavour WHERE protein_id = ? AND flavour_id = ?';
+        $checkIfLinkedStmt = $this->db->prepare($checkIfLinkedQuery);
+        $checkIfLinkedStmt->execute([$protein_id, $flavour_id]);
+
+        $checkIfLinkedResult = $checkIfLinkedStmt->fetch();
+        if ($checkIfLinkedResult) {
+            try{
+                $proteinFlavourId = $checkIfLinkedResult['id'];
+                // if linked, delete the id from the
+                $deleteProteinFlavourQuery = 'DELETE FROM protein_flavour WHERE id = ?';
+                $deleteProteinStmt = $this->db->prepare($deleteProteinFlavourQuery);
+                $deleteProteinStmt->execute([$proteinFlavourId]);
+                
+                $payload = [
+                    'success' => true,
+                    'message' => 'Flavour removed from protein successfully',
+                    'data' => [
+                        'protein_id' => $protein_id,
+                        'flavour_id' => $flavour_id,
+                    ],
+                    'timestamp' => date('Y-m-d H:i:s')
+                ];
+                $response->getBody()->write(json_encode($payload));
+                return $response
+                    ->withHeader('Content-Type', 'application/json');
+            } catch(PDOException $e) {
+                $payload = [
+                    'success' => false,
+                    'error' => 'Failed to remove flavour from protein',
+                    'details' => $e->getMessage(),
+                    'timestamp' => date('Y-m-d H:i:s')
+                ];
+                $response->getBody()->write(json_encode($payload));
+                return $response
+                    ->withHeader('Content-Type', 'application/json')
+                    ->withStatus(500);
+            }
+
+        } else {
+            $payload = [
+                'success' => false,
+                'error' => 'Flavour not linked to protein',
+                'details' => [
+                    'flavour_id' => $flavour_id,
+                    'protein_id' => $protein_id
+                ],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(404);
+        }
+    }
+
     public function addCutToProtein(Request $request, Response $response, array $args): Response {
         $protein_id = $args['protein_id'];
         $input = $request->getParsedBody();
@@ -294,7 +402,7 @@ class ProteinController {
             $payload = [
                 'success' => false,
                 'error' => 'Protein not found',
-                'details' => ['id' => $protein_id],
+                'details' => ['protein_id' => $protein_id],
                 'timestamp' => date('Y-m-d H:i:s')
             ];
             $response->getBody()->write(json_encode($payload));
@@ -303,22 +411,22 @@ class ProteinController {
                 ->withStatus(404);
         }
 
-            // check if protein exists
-            $checkProteinQuery = 'SELECT id FROM protein WHERE id = ?';
-            $checkProteinStmt = $this->db->prepare($checkProteinQuery);
-            $checkProteinStmt->execute([$protein_id]);
-            if (!$checkProteinStmt->fetch()) {
-                $payload = [
-                    'success' => false,
-                    'error' => 'Protein not found',
-                    'details' => ['protein_id' => $protein_id],
-                    'timestamp' => date('Y-m-d H:i:s')
-                ];
-                $response->getBody()->write(json_encode($payload));
-                return $response
-                    ->withHeader('Content-Type', 'application/json')
-                    ->withStatus(404);
-            }
+        // check if cut exists
+        $checkCutQuery = 'SELECT id FROM cut WHERE id = ?';
+        $checkCutStmt = $this->db->prepare($checkCutQuery);
+        $checkCutStmt->execute([$cut_id]);
+        if (!$checkCutStmt->fetch()) {
+            $payload = [
+                'success' => false,
+                'error' => 'Cut not found',
+                'details' => ['cut_id' => $cut_id],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(404);
+        }
 
         // Check if this Cut is already added to this protein
         $checkDuplicateQuery = 'SELECT 1 FROM protein_cut WHERE protein_id = ? AND cut_id = ?';
@@ -327,7 +435,7 @@ class ProteinController {
         if ($checkDuplicateStmt->fetch()) {
             $payload = [
                 'success' => false,
-                'error' => 'Flavour already added to this protein',
+                'error' => 'Cut already added to this protein',
                 'details' => [
                     'protein_id' => $protein_id,
                     'cut_id' => $cut_id

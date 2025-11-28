@@ -2,9 +2,11 @@
 
 use Slim\Factory\AppFactory;
 use App\Middleware\CorsMiddleware;
+use App\Middleware\DebugMiddleware;
 use App\Controllers\ProteinController;
 use App\Controllers\FlavoursController;
 use App\Controllers\CutsController;
+use App\Utils\DebugLogger;
 use DI\Container;
 
 require __DIR__ . '/vendor/autoload.php';
@@ -35,8 +37,18 @@ $container->set(CutsController::class, function($c) {
 AppFactory::setContainer($container);
 $app = AppFactory::create();
 
-// Add error middleware
-$app->addErrorMiddleware(true, true, true);
+// Add debug middleware (only in development)
+if (getenv('APP_ENV') !== 'production') {
+    $app->add(new DebugMiddleware());
+}
+
+// Add routing middleware
+$app->addRoutingMiddleware();
+
+// Add enhanced error middleware
+$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+$errorHandler = $errorMiddleware->getDefaultErrorHandler();
+$errorHandler->forceContentType('application/json');
 
 // Add CORS middleware globally
 $app->add(new CorsMiddleware(['http://localhost:5173']));
