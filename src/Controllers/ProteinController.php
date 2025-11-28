@@ -479,6 +479,114 @@ class ProteinController {
         }
     }
 
+    public function removeCutFromProtein(Request $request, Response $response, array $args): Response {
+        $protein_id = $args['protein_id'];
+        $input = $request->getParsedBody();
+        $validator = new Validator($input);
+        $validator->required('cut_id')->integer();
+
+        if($validator->fails()) {
+            $payload = [
+                'success' => false,
+                'error' => 'Validation failed',
+                'details' => $validator->errors(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(400);
+        }
+
+        $cut_id = $input['cut_id'];
+
+        $checkProteinQuery = 'SELECT id FROM protein WHERE id = ?';
+        $checkProteinStmt = $this->db->prepare($checkProteinQuery);
+        $checkProteinStmt->execute([$protein_id]);
+        if (!$checkProteinStmt->fetch()) {
+            $payload = [
+                'success' => false,
+                'error' => 'Protein not found',
+                'details' => ['protein_id' => $protein_id],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(404);
+        }
+
+        $checkCutQuery = 'SELECT id FROM cut WHERE id = ?';
+        $checkCutStmt = $this->db->prepare($checkCutQuery);
+        $checkCutStmt->execute([$cut_id]);
+        if (!$checkCutStmt->fetch()) {
+            $payload = [
+                'success' => false,
+                'error' => 'Cut not found',
+                'details' => ['cut_id' => $cut_id],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(404);
+        }
+
+        $checkIfLinkedQuery = 'SELECT id FROM protein_cut WHERE protein_id = ? AND cut_id = ?';
+        $checkIfLinkedStmt = $this->db->prepare($checkIfLinkedQuery);
+        $checkIfLinkedStmt->execute([$protein_id, $cut_id]);
+
+        $checkIfLinkedResult = $checkIfLinkedStmt->fetch();
+        if ($checkIfLinkedResult) {
+            try{
+                $proteinCutId = $checkIfLinkedResult['id'];
+                // if linked, delete the id from the protein_cut table
+                $deleteProteinCutQuery = 'DELETE FROM protein_cut WHERE id = ?';
+                $deleteProteinStmt = $this->db->prepare($deleteProteinCutQuery);
+                $deleteProteinStmt->execute([$proteinCutId]);
+                
+                $payload = [
+                    'success' => true,
+                    'message' => 'Cut removed from protein successfully',
+                    'data' => [
+                        'protein_id' => $protein_id,
+                        'cut_id' => $cut_id,
+                    ],
+                    'timestamp' => date('Y-m-d H:i:s')
+                ];
+                $response->getBody()->write(json_encode($payload));
+                return $response
+                    ->withHeader('Content-Type', 'application/json');
+            } catch(PDOException $e) {
+                $payload = [
+                    'success' => false,
+                    'error' => 'Failed to remove cut from protein',
+                    'details' => $e->getMessage(),
+                    'timestamp' => date('Y-m-d H:i:s')
+                ];
+                $response->getBody()->write(json_encode($payload));
+                return $response
+                    ->withHeader('Content-Type', 'application/json')
+                    ->withStatus(500);
+            }
+
+        } else {
+            $payload = [
+                'success' => false,
+                'error' => 'Cut not linked to protein',
+                'details' => [
+                    'cut_id' => $cut_id,
+                    'protein_id' => $protein_id
+                ],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(404);
+        }
+    }
+
     public function deleteProtein(Request $request, Response $response, array $args): Response {
         $protein_id = $args['protein_id'];
         
