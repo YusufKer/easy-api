@@ -1,0 +1,23 @@
+# Log Management Configuration
+
+# Maximum log file size before rotation (can be changed)
+LOG_MAX_SIZE=10485760  # 10MB in bytes
+LOG_MAX_FILES=5        # Keep 5 rotated files
+LOG_RETENTION_DAYS=7   # Keep logs for 7 days
+
+# To customize log rotation, modify these values in your application:
+# DebugLogger::setMaxFileSize(20 * 1024 * 1024); // 20MB
+# DebugLogger::setMaxFiles(10); // Keep 10 files
+
+# Cron job examples:
+# Run log cleanup daily at 2 AM
+# 0 2 * * * /path/to/your/project/rotate-logs.sh
+
+# Run PHP cleanup weekly
+# 0 3 * * 0 cd /path/to/your/project && php log-manager.php cleanup 14
+
+# Manual commands:
+# ./log-manager.php stats           # Show current log file sizes
+# ./log-manager.php cleanup 7       # Clean logs older than 7 days
+# ./log-manager.php rotate          # Force rotation
+# ./rotate-logs.sh                  # System-level rotation
