@@ -1,3 +1,4 @@
 .env
 vendor/
-debug.log
+src/utils/debug.log
+src/Utils/logs/debug.log
