@@ -261,6 +261,89 @@ class ProteinController {
         }
     }
 
+    public function updateFlavourPriceForProtein(Request $request, Response $response, array $args): Response {
+        $protein_id = $args['protein_id'];
+        $flavour_id = $args['flavour_id'];
+        $input = $request->getParsedBody();
+
+        // Validate input
+        $validator = new Validator($input);
+        $validator->required('price')->numeric()->min(0);
+
+        if ($validator->fails()){
+            $payload = [
+                'success' => false,
+                'error' => 'Validation failed',
+                'details' => $validator->errors(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(400);
+        }
+        $checkProteinFlavourQuery = 'SELECT id FROM protein_flavour WHERE protein_id = ? AND flavour_id = ?';
+        $checkProteinFlavourStmt = $this->db->prepare($checkProteinFlavourQuery);
+        $checkProteinFlavourStmt->execute([$protein_id, $flavour_id]);
+        $proteinFlavour = $checkProteinFlavourStmt->fetch();    
+
+        if (!$proteinFlavour) {
+            $payload = [
+                'success' => false,
+                'error' => 'Flavour not linked to protein',
+                'details' => [
+                    'protein_id' => $protein_id,
+                    'flavour_id' => $flavour_id
+                ],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(404);
+        }
+
+        $newPrice = $input['price'];
+
+        $updateQuery = 'UPDATE protein_flavour SET price = ? WHERE id = ?';
+        $updateStmt = $this->db->prepare($updateQuery);
+        try {
+            $updateStmt->execute([$newPrice, $proteinFlavour['id']]);
+            $payload = [
+                'success' => true,
+                'message' => 'Flavour price updated successfully for protein',
+                'data' => [
+                    'protein_id' => $protein_id,
+                    'flavour_id' => $flavour_id,
+                    'new_price' => $newPrice
+                ],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response->withHeader('Content-Type', 'application/json');
+        }catch(PDOException $e){
+            $updateStmt->execute([$newPrice, $proteinFlavour['id']]);
+            $payload = [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (PDOException $e) {
+            $payload = [
+                'success' => false,
+                'error' => 'Failed to update flavour price for protein',
+                'details' => $e->getMessage(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(500);
+        }
+    }
+
     public function removeFlavourFromProtein(Request $request, Response $response, array $args): Response {
         $protein_id = $args['protein_id'];
         $input = $request->getParsedBody();
@@ -469,6 +552,80 @@ class ProteinController {
             $payload = [
                 'success' => false,
                 'error' => 'Failed to add cut to protein',
+                'details' => $e->getMessage(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(500);
+        }
+    }
+
+    public function updateCutPriceForProtein(Request $request, Response $response, array $args): Response {
+        $protein_id = $args['protein_id'];
+        $cut_id = $args['cut_id'];
+        $input = $request->getParsedBody();
+
+        // Validate input
+        $validator = new Validator($input);
+        $validator->required('price')->numeric()->min(0);
+
+        if ($validator->fails()){
+            $payload = [
+                'success' => false,
+                'error' => 'Validation failed',
+                'details' => $validator->errors(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(400);
+        }
+        $checkProteinCutQuery = 'SELECT id FROM protein_cut WHERE protein_id = ? AND cut_id = ?';
+        $checkProteinCutStmt = $this->db->prepare($checkProteinCutQuery);
+        $checkProteinCutStmt->execute([$protein_id, $cut_id]);
+        $proteinCut = $checkProteinCutStmt->fetch();    
+
+        if (!$proteinCut) {
+            $payload = [
+                'success' => false,
+                'error' => 'Cut not linked to protein',
+                'details' => [
+                    'protein_id' => $protein_id,
+                    'cut_id' => $cut_id
+                ],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(404);
+        }
+
+        $newPrice = $input['price'];
+
+        $updateQuery = 'UPDATE protein_cut SET price = ? WHERE id = ?';
+        $updateStmt = $this->db->prepare($updateQuery);
+        try {
+            $updateStmt->execute([$newPrice, $proteinCut['id']]);
+            $payload = [
+                'success' => true,
+                'message' => 'Cut price updated successfully for protein',
+                'data' => [
+                    'protein_id' => $protein_id,
+                    'cut_id' => $cut_id,
+                    'new_price' => $newPrice
+                ],
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            $response->getBody()->write(json_encode($payload));
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (PDOException $e) {
+            $payload = [
+                'success' => false,
+                'error' => 'Failed to update cut price for protein',
                 'details' => $e->getMessage(),
                 'timestamp' => date('Y-m-d H:i:s')
             ];
