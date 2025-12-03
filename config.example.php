@@ -2,22 +2,21 @@
 
 /**
  * Database Configuration
- * Uses environment variables loaded from .env
+ * This file should use environment variables loaded from .env
  */
 
 function getDbConnection() {
-    $host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'localhost';
-    $dbname = $_ENV['DB_NAME'] ?? getenv('DB_NAME');
-    $username = $_ENV['DB_USER'] ?? getenv('DB_USER');
-    $password = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD');
-    $port = $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: '3306';
+    $host = getenv('DB_HOST') ?: 'localhost';
+    $dbname = getenv('DB_NAME');
+    $username = getenv('DB_USER');
+    $password = getenv('DB_PASSWORD');
 
     if (!$dbname || !$username) {
         throw new Exception('Database configuration missing. Check your .env file.');
     }
 
     try {
-        $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
+        $dsn = "mysql:host={$host};dbname={$dbname};charset=utf8mb4";
         $pdo = new PDO($dsn, $username, $password, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -26,6 +25,6 @@ function getDbConnection() {
         return $pdo;
     } catch (PDOException $e) {
         error_log('Database connection failed: ' . $e->getMessage());
-        throw new Exception('Database connection failed: ' . $e->getMessage());
+        throw new Exception('Database connection failed');
     }
 }
