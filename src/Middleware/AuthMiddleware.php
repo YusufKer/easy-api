@@ -2,76 +2,102 @@
 
 namespace App\Middleware;
 
+use App\Models\User;
+use App\Utils\JwtHelper;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Server\MiddlewareInterface;
 use Slim\Psr7\Response as SlimResponse;
+use PDO;
+use Exception;
 
 class AuthMiddleware implements MiddlewareInterface {
     
+    private $userModel;
+    private $optional;
+
+    /**
+     * @param PDO $db Database connection
+     * @param bool $optional If true, allows requests without auth (user will be null)
+     */
+    public function __construct(PDO $db, bool $optional = false) {
+        $this->userModel = new User($db);
+        $this->optional = $optional;
+    }
+    
     public function process(Request $request, RequestHandler $handler): Response {
-        // TODO: Implement real authentication logic
-        // For now, we'll just log that auth middleware ran and allow all requests
+        // Try JWT authentication first
+        $authHeader = $request->getHeaderLine('Authorization');
         
-        // Example of what you'd do in production:
-        // $token = $request->getHeaderLine('Authorization');
-        // 
-        // if (empty($token)) {
-        //     $response = new SlimResponse();
-        //     $payload = [
-        //         'success' => false,
-        //         'error' => 'Missing authentication token',
-        //         'timestamp' => date('Y-m-d H:i:s')
-        //     ];
-        //     $response->getBody()->write(json_encode($payload));
-        //     return $response
-        //         ->withHeader('Content-Type', 'application/json')
-        //         ->withStatus(401);
-        // }
-        // 
-        // if (!$this->isValidToken($token)) {
-        //     $response = new SlimResponse();
-        //     $payload = [
-        //         'success' => false,
-        //         'error' => 'Invalid or expired token',
-        //         'timestamp' => date('Y-m-d H:i:s')
-        //     ];
-        //     $response->getBody()->write(json_encode($payload));
-        //     return $response
-        //         ->withHeader('Content-Type', 'application/json')
-        //         ->withStatus(401);
-        // }
-        // 
-        // Attach user to request for use in controllers
-        // $request = $request->withAttribute('user', $this->getUserFromToken($token));
+        if (!empty($authHeader) && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+            $token = $matches[1];
+            
+            try {
+                $decoded = JwtHelper::validateToken($token);
+                $user = $this->userModel->findById($decoded->sub);
+                
+                if ($user && $user['is_active']) {
+                    // Attach user to request (without password_hash)
+                    $safeUser = [
+                        'id' => $user['id'],
+                        'email' => $user['email'],
+                        'role' => $user['role']
+                    ];
+                    $request = $request->withAttribute('user', $safeUser);
+                    return $handler->handle($request);
+                } else {
+                    return $this->unauthorizedResponse('User not found or inactive');
+                }
+            } catch (Exception $e) {
+                return $this->unauthorizedResponse('Invalid or expired token: ' . $e->getMessage());
+            }
+        }
         
-        // For now: just pass through
-        error_log("AuthMiddleware: Request to {$request->getUri()->getPath()} - Currently allowing all requests");
+        // Try API key authentication
+        $apiKey = $request->getHeaderLine('X-API-Key');
         
-        // Continue to next middleware or controller
-        return $handler->handle($request);
+        if (!empty($apiKey)) {
+            $user = $this->userModel->findByApiKey($apiKey);
+            
+            if ($user) {
+                // Attach user to request
+                $safeUser = [
+                    'id' => $user['id'],
+                    'email' => $user['email'],
+                    'role' => $user['role']
+                ];
+                $request = $request->withAttribute('user', $safeUser);
+                return $handler->handle($request);
+            } else {
+                return $this->unauthorizedResponse('Invalid API key');
+            }
+        }
+        
+        // No authentication provided
+        if ($this->optional) {
+            // Optional auth - continue without user
+            return $handler->handle($request);
+        }
+        
+        // Required auth - return 401
+        return $this->unauthorizedResponse('Missing authentication. Provide Authorization header or X-API-Key');
     }
     
     /**
-     * Validate JWT or API token (placeholder)
+     * Create unauthorized response
      */
-    private function isValidToken(string $token): bool {
-        // TODO: Implement token validation
-        // - Decode JWT
-        // - Check expiration
-        // - Verify signature
-        // - Check against database/cache
-        
-        return true; // Placeholder
-    }
-    
-    /**
-     * Extract user from token (placeholder)
-     */
-    private function getUserFromToken(string $token) {
-        // TODO: Decode token and fetch user from database
-        
-        return null; // Placeholder
+    private function unauthorizedResponse(string $message): Response {
+        $response = new SlimResponse();
+        $payload = [
+            'success' => false,
+            'error' => 'Unauthorized',
+            'message' => $message,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+        $response->getBody()->write(json_encode($payload));
+        return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(401);
     }
 }

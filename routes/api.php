@@ -4,8 +4,30 @@ use Slim\Routing\RouteCollectorProxy;
 use App\Controllers\ProteinController;
 use App\Controllers\FlavoursController;
 use App\Controllers\CutsController;
+use App\Controllers\AuthController;
 use App\Middleware\AuthMiddleware;
 
+// ============================================
+// PUBLIC AUTH ROUTES (no authentication)
+// ============================================
+$app->group('/auth', function (RouteCollectorProxy $group) {
+    $group->post('/register', [AuthController::class, 'register']);
+    $group->post('/login', [AuthController::class, 'login']);
+    $group->post('/refresh', [AuthController::class, 'refresh']);
+    $group->post('/logout', [AuthController::class, 'logout']);
+});
+
+// ============================================
+// PROTECTED AUTH ROUTES (require authentication)
+// ============================================
+$app->group('/auth', function (RouteCollectorProxy $group) {
+    $group->get('/me', [AuthController::class, 'me']);
+    $group->post('/api-key', [AuthController::class, 'generateApiKey']);
+})->add(AuthMiddleware::class);
+
+// ============================================
+// PROTECTED API ROUTES (require authentication)
+// ============================================
 // Group all API routes with /api prefix and auth middleware
 $app->group('/api', function (RouteCollectorProxy $group) {
     

@@ -6,9 +6,13 @@ use App\Middleware\DebugMiddleware;
 use App\Controllers\ProteinController;
 use App\Controllers\FlavoursController;
 use App\Controllers\CutsController;
+use App\Controllers\AuthController;
 use App\Models\Protein;
 use App\Models\Flavour;
 use App\Models\Cut;
+use App\Models\User;
+use App\Services\AuthService;
+use App\Middleware\AuthMiddleware;
 use App\Utils\DebugLogger;
 use DI\Container;
 
@@ -41,6 +45,20 @@ $container->set(Cut::class, function($c) {
     return new Cut($c->get('db'));
 });
 
+$container->set(User::class, function($c) {
+    return new User($c->get('db'));
+});
+
+// Register Services
+$container->set(AuthService::class, function($c) {
+    return new AuthService($c->get('db'));
+});
+
+// Register middleware
+$container->set(AuthMiddleware::class, function($c) {
+    return new AuthMiddleware($c->get('db'), false); // false = authentication required
+});
+
 // Configure controllers with model dependencies
 $container->set(ProteinController::class, function($c) {
     return new ProteinController(
@@ -56,6 +74,10 @@ $container->set(FlavoursController::class, function($c) {
 
 $container->set(CutsController::class, function($c) {
     return new CutsController($c->get(Cut::class));
+});
+
+$container->set(AuthController::class, function($c) {
+    return new AuthController($c->get(AuthService::class));
 });
 
 // Create Slim App with container

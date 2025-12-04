@@ -1,6 +1,6 @@
 <?php
 
-namespace Utils;
+namespace App\Utils;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -8,22 +8,20 @@ use Exception;
 
 class JwtHelper
 {
-	private static function getSecret(): string
-	{
-		$secret = getenv('JWT_SECRET');
-		if (!$secret) {
-			throw new Exception('JWT_SECRET not set in environment');
-		}
-		return $secret;
-	}
+    private static function getSecret(): string
+    {
+        $secret = $_ENV['JWT_SECRET'] ?? getenv('JWT_SECRET');
+        if (!$secret) {
+            throw new Exception('JWT_SECRET not set in environment');
+        }
+        return $secret;
+    }
 
-	private static function getExpiry(): int
-	{
-		$exp = getenv('JWT_EXPIRY');
-		return $exp ? (int)$exp : 1800;
-	}
-
-	private static function getIssuer(): string
+    private static function getExpiry(): int
+    {
+        $exp = $_ENV['JWT_EXPIRY'] ?? getenv('JWT_EXPIRY');
+        return $exp ? (int)$exp : 1800;
+    }	private static function getIssuer(): string
 	{
 		return $_SERVER['HTTP_HOST'] ?? 'easy-api';
 	}
