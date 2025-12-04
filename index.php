@@ -107,7 +107,8 @@ $errorHandler->forceContentType('application/json');
 $app->add(new SecurityHeadersMiddleware());
 
 // Add CORS middleware globally
-$app->add(new CorsMiddleware(['http://localhost:5173']));
+$allowedOrigins = getenv('ALLOWED_ORIGINS') ? explode(',', getenv('ALLOWED_ORIGINS')) : ['*'];
+$app->add(new CorsMiddleware($allowedOrigins));
 
 // Add JSON body parsing middleware
 $app->addBodyParsingMiddleware();
