@@ -3,6 +3,7 @@
 use Slim\Factory\AppFactory;
 use App\Middleware\CorsMiddleware;
 use App\Middleware\DebugMiddleware;
+use App\Middleware\AuthMiddleware;
 use App\Controllers\ProteinController;
 use App\Controllers\FlavoursController;
 use App\Controllers\CutsController;
@@ -12,7 +13,6 @@ use App\Models\Flavour;
 use App\Models\Cut;
 use App\Models\User;
 use App\Services\AuthService;
-use App\Middleware\AuthMiddleware;
 use App\Utils\DebugLogger;
 use DI\Container;
 
