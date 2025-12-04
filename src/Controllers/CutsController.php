@@ -3,21 +3,20 @@
 namespace App\Controllers;
 
 use App\Core\Validator;
+use App\Models\Cut;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use PDOException;
 
 class CutsController {
-    private $db;
+    private $cutModel;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct(Cut $cutModel) {
+        $this->cutModel = $cutModel;
     }
 
     public function index(Request $request, Response $response): Response {
-        $query = "SELECT id, name FROM cut";
-        $stmt = $this->db->query($query);
-        $cuts = $stmt->fetchAll();
+        $cuts = $this->cutModel->findAll();
 
         $payload = [
             'success' => true,
@@ -53,11 +52,7 @@ class CutsController {
         $name = trim($input['name']);
 
         // Check if cut already exists
-        $checkQuery = 'SELECT id FROM cut WHERE name = ?';
-        $checkStmt = $this->db->prepare($checkQuery);
-        $checkStmt->execute([$name]);
-
-        if ($checkStmt->fetch()) {
+        if ($this->cutModel->existsByName($name)) {
             $payload = [
                 'success' => false,
                 'error' => 'Cut already exists',
@@ -71,12 +66,7 @@ class CutsController {
         }
 
         try {
-            // Insert into database
-            $query = 'INSERT INTO cut (name) VALUES (?)';
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$name]);
-
-            $id = $this->db->lastInsertId();
+            $id = $this->cutModel->create($name);
             $payload = [
                 'success' => true,
                 'message' => 'Cut created successfully',
@@ -108,10 +98,7 @@ class CutsController {
         $cut_id = $args['cut_id'];
         
         // Check if cut exists
-        $checkQuery = 'SELECT id, name FROM cut WHERE id = ?';
-        $checkStmt = $this->db->prepare($checkQuery);
-        $checkStmt->execute([$cut_id]);
-        $cut = $checkStmt->fetch();
+        $cut = $this->cutModel->findById($cut_id);
 
         if (!$cut) {
             $payload = [
@@ -127,21 +114,7 @@ class CutsController {
         }
 
         try {
-            // Start transaction for atomic deletion
-            $this->db->beginTransaction();
-
-            // Delete related records from junction tables
-            $deleteProteinCut = 'DELETE FROM protein_cut WHERE cut_id = ?';
-            $stmt1 = $this->db->prepare($deleteProteinCut);
-            $stmt1->execute([$cut_id]);
-
-            // Delete the cut itself
-            $deleteCut = 'DELETE FROM cut WHERE id = ?';
-            $stmt3 = $this->db->prepare($deleteCut);
-            $stmt3->execute([$cut_id]);
-
-            // Commit transaction
-            $this->db->commit();
+            $this->cutModel->delete($cut_id);
 
             $payload = [
                 'success' => true,
@@ -155,8 +128,6 @@ class CutsController {
             $response->getBody()->write(json_encode($payload));
             return $response->withHeader('Content-Type', 'application/json');
         } catch (PDOException $e) {
-            // Rollback on error
-            $this->db->rollBack();
             $payload = [
                 'success' => false,
                 'error' => 'Failed to delete cut',

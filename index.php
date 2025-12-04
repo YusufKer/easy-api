@@ -6,6 +6,9 @@ use App\Middleware\DebugMiddleware;
 use App\Controllers\ProteinController;
 use App\Controllers\FlavoursController;
 use App\Controllers\CutsController;
+use App\Models\Protein;
+use App\Models\Flavour;
+use App\Models\Cut;
 use App\Utils\DebugLogger;
 use DI\Container;
 
@@ -25,17 +28,34 @@ $container->set('db', function() {
     return getDbConnection();
 });
 
-// Configure controllers with database dependency
+// Register Models
+$container->set(Protein::class, function($c) {
+    return new Protein($c->get('db'));
+});
+
+$container->set(Flavour::class, function($c) {
+    return new Flavour($c->get('db'));
+});
+
+$container->set(Cut::class, function($c) {
+    return new Cut($c->get('db'));
+});
+
+// Configure controllers with model dependencies
 $container->set(ProteinController::class, function($c) {
-    return new ProteinController($c->get('db'));
+    return new ProteinController(
+        $c->get(Protein::class),
+        $c->get(Flavour::class),
+        $c->get(Cut::class)
+    );
 });
 
 $container->set(FlavoursController::class, function($c) {
-    return new FlavoursController($c->get('db'));
+    return new FlavoursController($c->get(Flavour::class));
 });
 
 $container->set(CutsController::class, function($c) {
-    return new CutsController($c->get('db'));
+    return new CutsController($c->get(Cut::class));
 });
 
 // Create Slim App with container

@@ -3,21 +3,20 @@
 namespace App\Controllers;
 
 use App\Core\Validator;
+use App\Models\Flavour;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use PDOException;
 
 class FlavoursController {
-    private $db;
+    private $flavourModel;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct(Flavour $flavourModel) {
+        $this->flavourModel = $flavourModel;
     }
 
     public function index(Request $request, Response $response): Response {
-        $query = "SELECT id, name FROM flavour";
-        $stmt = $this->db->query($query);
-        $flavours = $stmt->fetchAll();
+        $flavours = $this->flavourModel->findAll();
 
         $payload = [
             'success' => true,
@@ -53,11 +52,7 @@ class FlavoursController {
         $name = trim($input['name']);
 
         // Check if flavour already exists
-        $checkQuery = 'SELECT id FROM flavour WHERE name = ?';
-        $checkStmt = $this->db->prepare($checkQuery);
-        $checkStmt->execute([$name]);
-
-        if ($checkStmt->fetch()) {
+        if ($this->flavourModel->existsByName($name)) {
             $payload = [
                 'success' => false,
                 'error' => 'Flavour already exists',
@@ -71,12 +66,7 @@ class FlavoursController {
         }
 
         try {
-            // Insert into database
-            $query = 'INSERT INTO flavour (name) VALUES (?)';
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$name]);
-
-            $id = $this->db->lastInsertId();
+            $id = $this->flavourModel->create($name);
             $payload = [
                 'success' => true,
                 'message' => 'Flavour created successfully',
@@ -108,10 +98,7 @@ class FlavoursController {
         $flavour_id = $args['flavour_id'];
         
         // Check if flavour exists
-        $checkQuery = 'SELECT id, name FROM flavour WHERE id = ?';
-        $checkStmt = $this->db->prepare($checkQuery);
-        $checkStmt->execute([$flavour_id]);
-        $flavour = $checkStmt->fetch();
+        $flavour = $this->flavourModel->findById($flavour_id);
 
         if (!$flavour) {
             $payload = [
@@ -127,21 +114,7 @@ class FlavoursController {
         }
 
         try {
-            // Start transaction for atomic deletion
-            $this->db->beginTransaction();
-
-            // Delete related records from junction tables
-            $deleteProteinFlavour = 'DELETE FROM protein_flavour WHERE flavour_id = ?';
-            $stmt1 = $this->db->prepare($deleteProteinFlavour);
-            $stmt1->execute([$flavour_id]);
-
-            // Delete the flavour itself
-            $deleteFlavour = 'DELETE FROM flavour WHERE id = ?';
-            $stmt3 = $this->db->prepare($deleteFlavour);
-            $stmt3->execute([$flavour_id]);
-
-            // Commit transaction
-            $this->db->commit();
+            $this->flavourModel->delete($flavour_id);
 
             $payload = [
                 'success' => true,
@@ -155,8 +128,6 @@ class FlavoursController {
             $response->getBody()->write(json_encode($payload));
             return $response->withHeader('Content-Type', 'application/json');
         } catch (PDOException $e) {
-            // Rollback on error
-            $this->db->rollBack();
             $payload = [
                 'success' => false,
                 'error' => 'Failed to delete flavour',

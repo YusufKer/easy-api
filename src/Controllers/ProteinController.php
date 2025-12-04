@@ -3,21 +3,26 @@
 namespace App\Controllers;
 
 use App\Core\Validator;
+use App\Models\Protein;
+use App\Models\Flavour;
+use App\Models\Cut;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use PDOException;
 
 class ProteinController {
-    private $db;
+    private $proteinModel;
+    private $flavourModel;
+    private $cutModel;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct(Protein $proteinModel, Flavour $flavourModel, Cut $cutModel) {
+        $this->proteinModel = $proteinModel;
+        $this->flavourModel = $flavourModel;
+        $this->cutModel = $cutModel;
     }
 
     public function index(Request $request, Response $response): Response {
-        $query = "SELECT id, name FROM protein";
-        $stmt = $this->db->query($query);
-        $proteins = $stmt->fetchAll();
+        $proteins = $this->proteinModel->findAll();
 
         $payload = [
             'success' => true,
@@ -33,10 +38,7 @@ class ProteinController {
     public function getById(Request $request, Response $response, array $args): Response {
         $protein_id = $args['protein_id'];
         
-        $get_protein = "SELECT id, name FROM protein WHERE id = ?";
-        $protein_stmt = $this->db->prepare($get_protein);
-        $protein_stmt->execute([$protein_id]);
-        $protein = $protein_stmt->fetch();
+        $protein = $this->proteinModel->findById($protein_id);
 
         if (!$protein) {
             $payload = [
@@ -51,24 +53,8 @@ class ProteinController {
                 ->withStatus(404);
         }
 
-        $get_cuts = "SELECT c.id, c.name, pc.price FROM cut c
-                     JOIN protein_cut pc ON c.id = pc.cut_id
-                     WHERE pc.protein_id = ?";
-        
-        $cuts_stmt = $this->db->prepare($get_cuts);
-        $cuts_stmt->execute([$protein_id]);
-        $cuts = $cuts_stmt->fetchAll();
-
-        $get_flavours = "SELECT f.id, f.name, pf.price FROM flavour f
-                         JOIN protein_flavour pf ON f.id = pf.flavour_id
-                         WHERE pf.protein_id = ?";
-        
-        $flavours_stmt = $this->db->prepare($get_flavours);
-        $flavours_stmt->execute([$protein_id]);
-        $flavours = $flavours_stmt->fetchAll();
-
-        $protein['cuts'] = $cuts;
-        $protein['flavours'] = $flavours;
+        $protein['cuts'] = $this->proteinModel->getCuts($protein_id);
+        $protein['flavours'] = $this->proteinModel->getFlavours($protein_id);
 
         $payload = [
             'success' => true,
@@ -104,11 +90,7 @@ class ProteinController {
         $name = trim($input['name']);
         
         // Check if protein already exists
-        $checkQuery = 'SELECT id FROM protein WHERE name = ?';
-        $checkStmt = $this->db->prepare($checkQuery);
-        $checkStmt->execute([$name]);
-        
-        if ($checkStmt->fetch()) {
+        if ($this->proteinModel->existsByName($name)) {
             $payload = [
                 'success' => false,
                 'error' => 'Protein already exists',
@@ -122,12 +104,7 @@ class ProteinController {
         }
         
         try {
-            // Insert into database
-            $query = 'INSERT INTO protein (name) VALUES (?)';
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$name]);
-            
-            $id = $this->db->lastInsertId();
+            $id = $this->proteinModel->create($name);
             $payload = [
                 'success' => true,
                 'message' => 'Protein created successfully',
@@ -181,10 +158,7 @@ class ProteinController {
         $price = $input['price'];
 
         // check if protein exists
-        $checkProteinQuery = 'SELECT id FROM protein WHERE id = ?';
-        $checkProteinStmt = $this->db->prepare($checkProteinQuery);
-        $checkProteinStmt->execute([$protein_id]);
-        if (!$checkProteinStmt->fetch()) {
+        if (!$this->proteinModel->findById($protein_id)) {
             $payload = [
                 'success' => false,
                 'error' => 'Protein not found',
@@ -196,11 +170,9 @@ class ProteinController {
                 ->withHeader('Content-Type', 'application/json')
                 ->withStatus(404);
         }
+        
         // check if flavour exists
-        $checkFlavourQuery = 'SELECT id FROM flavour WHERE id = ?';
-        $checkFlavourStmt = $this->db->prepare($checkFlavourQuery);
-        $checkFlavourStmt->execute([$flavour_id]);
-        if (!$checkFlavourStmt->fetch()) {
+        if (!$this->flavourModel->findById($flavour_id)) {
             $payload = [
                 'success' => false,
                 'error' => 'Flavour not found',
@@ -212,11 +184,9 @@ class ProteinController {
                 ->withHeader('Content-Type', 'application/json')
                 ->withStatus(404);
         }
+        
         // Check if this flavour is already added to this protein
-        $checkDuplicateQuery = 'SELECT 1 FROM protein_flavour WHERE protein_id = ? AND flavour_id = ?';
-        $checkDuplicateStmt = $this->db->prepare($checkDuplicateQuery);
-        $checkDuplicateStmt->execute([$protein_id, $flavour_id]);
-        if ($checkDuplicateStmt->fetch()) {
+        if ($this->proteinModel->hasFlavour($protein_id, $flavour_id)) {
             $payload = [
                 'success' => false,
                 'error' => 'Flavour already added to this protein',
@@ -232,9 +202,7 @@ class ProteinController {
                 ->withStatus(409);
         }
         try {
-            $insertFlavourQuery = 'INSERT INTO protein_flavour (protein_id, flavour_id, price) VALUES (?, ?, ?)';
-            $insertFlavourStmt = $this->db->prepare($insertFlavourQuery);
-            $insertFlavourStmt->execute([$protein_id, $flavour_id, $price]);
+            $this->proteinModel->addFlavour($protein_id, $flavour_id, $price);
             $payload = [
                 'success' => true,
                 'message' => 'Flavour added to protein successfully',
@@ -282,10 +250,8 @@ class ProteinController {
                 ->withHeader('Content-Type', 'application/json')
                 ->withStatus(400);
         }
-        $checkProteinFlavourQuery = 'SELECT id FROM protein_flavour WHERE protein_id = ? AND flavour_id = ?';
-        $checkProteinFlavourStmt = $this->db->prepare($checkProteinFlavourQuery);
-        $checkProteinFlavourStmt->execute([$protein_id, $flavour_id]);
-        $proteinFlavour = $checkProteinFlavourStmt->fetch();    
+        
+        $proteinFlavour = $this->proteinModel->getProteinFlavour($protein_id, $flavour_id);
 
         if (!$proteinFlavour) {
             $payload = [
@@ -305,10 +271,8 @@ class ProteinController {
 
         $newPrice = $input['price'];
 
-        $updateQuery = 'UPDATE protein_flavour SET price = ? WHERE id = ?';
-        $updateStmt = $this->db->prepare($updateQuery);
         try {
-            $updateStmt->execute([$newPrice, $proteinFlavour['id']]);
+            $this->proteinModel->updateFlavourPrice($proteinFlavour['id'], $newPrice);
             $payload = [
                 'success' => true,
                 'message' => 'Flavour price updated successfully for protein',
@@ -317,15 +281,6 @@ class ProteinController {
                     'flavour_id' => $flavour_id,
                     'new_price' => $newPrice
                 ],
-                'timestamp' => date('Y-m-d H:i:s')
-            ];
-            $response->getBody()->write(json_encode($payload));
-            return $response->withHeader('Content-Type', 'application/json');
-        }catch(PDOException $e){
-            $updateStmt->execute([$newPrice, $proteinFlavour['id']]);
-            $payload = [
-                'success' => false,
-                'message' => $e->getMessage(),
                 'timestamp' => date('Y-m-d H:i:s')
             ];
             $response->getBody()->write(json_encode($payload));
@@ -365,10 +320,7 @@ class ProteinController {
 
         $flavour_id = $input['flavour_id'];
 
-        $checkProteinQuery = 'SELECT id FROM protein WHERE id = ?';
-        $checkProteinStmt = $this->db->prepare($checkProteinQuery);
-        $checkProteinStmt->execute([$protein_id]);
-        if (!$checkProteinStmt->fetch()) {
+        if (!$this->proteinModel->findById($protein_id)) {
             $payload = [
                 'success' => false,
                 'error' => 'Protein not found',
@@ -381,10 +333,7 @@ class ProteinController {
                 ->withStatus(404);
         }
 
-        $checkFlavourQuery = 'SELECT id FROM flavour WHERE id = ?';
-        $checkFlavourStmt = $this->db->prepare($checkFlavourQuery);
-        $checkFlavourStmt->execute([$flavour_id]);
-        if (!$checkFlavourStmt->fetch()) {
+        if (!$this->flavourModel->findById($flavour_id)) {
             $payload = [
                 'success' => false,
                 'error' => 'Flavour not found',
@@ -397,18 +346,9 @@ class ProteinController {
                 ->withStatus(404);
         }
 
-        $checkIfLinkedQuery = 'SELECT id FROM protein_flavour WHERE protein_id = ? AND flavour_id = ?';
-        $checkIfLinkedStmt = $this->db->prepare($checkIfLinkedQuery);
-        $checkIfLinkedStmt->execute([$protein_id, $flavour_id]);
-
-        $checkIfLinkedResult = $checkIfLinkedStmt->fetch();
-        if ($checkIfLinkedResult) {
+        if ($this->proteinModel->hasFlavour($protein_id, $flavour_id)) {
             try{
-                $proteinFlavourId = $checkIfLinkedResult['id'];
-                // if linked, delete the id from the
-                $deleteProteinFlavourQuery = 'DELETE FROM protein_flavour WHERE id = ?';
-                $deleteProteinStmt = $this->db->prepare($deleteProteinFlavourQuery);
-                $deleteProteinStmt->execute([$proteinFlavourId]);
+                $this->proteinModel->removeFlavour($protein_id, $flavour_id);
                 
                 $payload = [
                     'success' => true,
@@ -478,10 +418,7 @@ class ProteinController {
         $price = $input['price'];
 
         // check if protein exists
-        $checkProteinQuery = 'SELECT id FROM protein WHERE id = ?';
-        $checkProteinStmt = $this->db->prepare($checkProteinQuery);
-        $checkProteinStmt->execute([$protein_id]);
-        if (!$checkProteinStmt->fetch()) {
+        if (!$this->proteinModel->findById($protein_id)) {
             $payload = [
                 'success' => false,
                 'error' => 'Protein not found',
@@ -495,10 +432,7 @@ class ProteinController {
         }
 
         // check if cut exists
-        $checkCutQuery = 'SELECT id FROM cut WHERE id = ?';
-        $checkCutStmt = $this->db->prepare($checkCutQuery);
-        $checkCutStmt->execute([$cut_id]);
-        if (!$checkCutStmt->fetch()) {
+        if (!$this->cutModel->findById($cut_id)) {
             $payload = [
                 'success' => false,
                 'error' => 'Cut not found',
@@ -512,10 +446,7 @@ class ProteinController {
         }
 
         // Check if this Cut is already added to this protein
-        $checkDuplicateQuery = 'SELECT 1 FROM protein_cut WHERE protein_id = ? AND cut_id = ?';
-        $checkDuplicateStmt = $this->db->prepare($checkDuplicateQuery);
-        $checkDuplicateStmt->execute([$protein_id, $cut_id]);
-        if ($checkDuplicateStmt->fetch()) {
+        if ($this->proteinModel->hasCut($protein_id, $cut_id)) {
             $payload = [
                 'success' => false,
                 'error' => 'Cut already added to this protein',
@@ -533,9 +464,7 @@ class ProteinController {
 
 
         try {
-            $insertCutQuery = 'INSERT INTO protein_cut (protein_id, cut_id, price) VALUES (?, ?, ?)';
-            $insertCutStmt = $this->db->prepare($insertCutQuery);
-            $insertCutStmt->execute([$protein_id, $cut_id, $price]);
+            $this->proteinModel->addCut($protein_id, $cut_id, $price);
             $payload = [
                 'success' => true,
                 'message' => 'Cut added to protein successfully',
@@ -583,10 +512,8 @@ class ProteinController {
                 ->withHeader('Content-Type', 'application/json')
                 ->withStatus(400);
         }
-        $checkProteinCutQuery = 'SELECT id FROM protein_cut WHERE protein_id = ? AND cut_id = ?';
-        $checkProteinCutStmt = $this->db->prepare($checkProteinCutQuery);
-        $checkProteinCutStmt->execute([$protein_id, $cut_id]);
-        $proteinCut = $checkProteinCutStmt->fetch();    
+        
+        $proteinCut = $this->proteinModel->getProteinCut($protein_id, $cut_id);
 
         if (!$proteinCut) {
             $payload = [
@@ -606,10 +533,8 @@ class ProteinController {
 
         $newPrice = $input['price'];
 
-        $updateQuery = 'UPDATE protein_cut SET price = ? WHERE id = ?';
-        $updateStmt = $this->db->prepare($updateQuery);
         try {
-            $updateStmt->execute([$newPrice, $proteinCut['id']]);
+            $this->proteinModel->updateCutPrice($proteinCut['id'], $newPrice);
             $payload = [
                 'success' => true,
                 'message' => 'Cut price updated successfully for protein',
@@ -657,10 +582,7 @@ class ProteinController {
 
         $cut_id = $input['cut_id'];
 
-        $checkProteinQuery = 'SELECT id FROM protein WHERE id = ?';
-        $checkProteinStmt = $this->db->prepare($checkProteinQuery);
-        $checkProteinStmt->execute([$protein_id]);
-        if (!$checkProteinStmt->fetch()) {
+        if (!$this->proteinModel->findById($protein_id)) {
             $payload = [
                 'success' => false,
                 'error' => 'Protein not found',
@@ -673,10 +595,7 @@ class ProteinController {
                 ->withStatus(404);
         }
 
-        $checkCutQuery = 'SELECT id FROM cut WHERE id = ?';
-        $checkCutStmt = $this->db->prepare($checkCutQuery);
-        $checkCutStmt->execute([$cut_id]);
-        if (!$checkCutStmt->fetch()) {
+        if (!$this->cutModel->findById($cut_id)) {
             $payload = [
                 'success' => false,
                 'error' => 'Cut not found',
@@ -689,18 +608,9 @@ class ProteinController {
                 ->withStatus(404);
         }
 
-        $checkIfLinkedQuery = 'SELECT id FROM protein_cut WHERE protein_id = ? AND cut_id = ?';
-        $checkIfLinkedStmt = $this->db->prepare($checkIfLinkedQuery);
-        $checkIfLinkedStmt->execute([$protein_id, $cut_id]);
-
-        $checkIfLinkedResult = $checkIfLinkedStmt->fetch();
-        if ($checkIfLinkedResult) {
+        if ($this->proteinModel->hasCut($protein_id, $cut_id)) {
             try{
-                $proteinCutId = $checkIfLinkedResult['id'];
-                // if linked, delete the id from the protein_cut table
-                $deleteProteinCutQuery = 'DELETE FROM protein_cut WHERE id = ?';
-                $deleteProteinStmt = $this->db->prepare($deleteProteinCutQuery);
-                $deleteProteinStmt->execute([$proteinCutId]);
+                $this->proteinModel->removeCut($protein_id, $cut_id);
                 
                 $payload = [
                     'success' => true,
@@ -748,10 +658,7 @@ class ProteinController {
         $protein_id = $args['protein_id'];
         
         // Check if protein exists
-        $checkQuery = 'SELECT id, name FROM protein WHERE id = ?';
-        $checkStmt = $this->db->prepare($checkQuery);
-        $checkStmt->execute([$protein_id]);
-        $protein = $checkStmt->fetch();
+        $protein = $this->proteinModel->findById($protein_id);
         
         if (!$protein) {
             $payload = [
@@ -767,25 +674,7 @@ class ProteinController {
         }
         
         try {
-            // Start transaction for atomic deletion
-            $this->db->beginTransaction();
-            
-            // Delete related records from junction tables
-            $deleteCuts = 'DELETE FROM protein_cut WHERE protein_id = ?';
-            $stmt1 = $this->db->prepare($deleteCuts);
-            $stmt1->execute([$protein_id]);
-            
-            $deleteFlavours = 'DELETE FROM protein_flavour WHERE protein_id = ?';
-            $stmt2 = $this->db->prepare($deleteFlavours);
-            $stmt2->execute([$protein_id]);
-            
-            // Delete the protein itself
-            $deleteProtein = 'DELETE FROM protein WHERE id = ?';
-            $stmt3 = $this->db->prepare($deleteProtein);
-            $stmt3->execute([$protein_id]);
-            
-            // Commit transaction
-            $this->db->commit();
+            $this->proteinModel->delete($protein_id);
             
             $payload = [
                 'success' => true,
@@ -799,8 +688,6 @@ class ProteinController {
             $response->getBody()->write(json_encode($payload));
             return $response->withHeader('Content-Type', 'application/json');
         } catch (PDOException $e) {
-            // Rollback on error
-            $this->db->rollBack();
             $payload = [
                 'success' => false,
                 'error' => 'Failed to delete protein',
