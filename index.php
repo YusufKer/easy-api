@@ -4,6 +4,7 @@ use Slim\Factory\AppFactory;
 use App\Middleware\CorsMiddleware;
 use App\Middleware\DebugMiddleware;
 use App\Middleware\AuthMiddleware;
+use App\Middleware\SecurityHeadersMiddleware;
 use App\Controllers\ProteinController;
 use App\Controllers\FlavoursController;
 use App\Controllers\CutsController;
@@ -101,6 +102,9 @@ $logErrorDetails = !$isProduction;      // Hide error details in logs for produc
 $errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, $logErrors, $logErrorDetails);
 $errorHandler = $errorMiddleware->getDefaultErrorHandler();
 $errorHandler->forceContentType('application/json');
+
+// Add Security Headers middleware
+$app->add(new SecurityHeadersMiddleware());
 
 // Add CORS middleware globally
 $app->add(new CorsMiddleware(['http://localhost:5173']));
