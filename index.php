@@ -92,8 +92,13 @@ if (getenv('APP_ENV') !== 'production') {
 // Add routing middleware
 $app->addRoutingMiddleware();
 
-// Add enhanced error middleware
-$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+// Add error middleware with environment-based configuration
+$isProduction = getenv('APP_ENV') === 'production';
+$displayErrorDetails = !$isProduction;  // Hide error details in production
+$logErrors = true;                      // Always log errors
+$logErrorDetails = !$isProduction;      // Hide error details in logs for production
+
+$errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, $logErrors, $logErrorDetails);
 $errorHandler = $errorMiddleware->getDefaultErrorHandler();
 $errorHandler->forceContentType('application/json');
 

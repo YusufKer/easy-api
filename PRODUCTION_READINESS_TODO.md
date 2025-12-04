@@ -8,19 +8,15 @@
 
 ## 🚨 CRITICAL ISSUES (Must Fix Before Production)
 
-- [ ] **1. Configure Error Handling for Production**
-  - File: `index.php` line 95
-  - Change `addErrorMiddleware(true, true, true)` to `addErrorMiddleware(false, false, false)` when `APP_ENV=production`
-  - Ensure stack traces and error details are hidden from API responses
-  - Test error responses in production mode
-
 - [ ] **2. Add Security Headers Middleware**
+
   - Create `src/Middleware/SecurityHeadersMiddleware.php`
   - Implement headers: HSTS, X-Frame-Options, X-Content-Type-Options, CSP, X-XSS-Protection
   - Add middleware to application stack in `index.php`
   - Test headers with security scanner tools
 
 - [ ] **3. Implement Rate Limiting**
+
   - Install rate limiting package (e.g., `akrabat/ratelimit`)
   - Create rate limiting middleware
   - Apply to `/auth/login` (5 attempts per 15 min)
@@ -29,6 +25,7 @@
   - Configure Redis/file-based storage for rate limit counters
 
 - [ ] **4. Restrict CORS to Specific Origins**
+
   - File: `src/Middleware/CorsMiddleware.php`
   - Change default `['*']` to specific allowed origins from environment variable
   - Add `ALLOWED_ORIGINS` to `.env` files
@@ -36,6 +33,7 @@
   - Test CORS from allowed and disallowed origins
 
 - [ ] **5. Set Up Structured Logging**
+
   - Install Monolog or similar logging library
   - Create `src/Services/Logger.php` with JSON formatting
   - Replace `error_log()` calls throughout codebase
@@ -45,6 +43,7 @@
   - Add log shipping to external service (optional)
 
 - [ ] **6. Hash Refresh Tokens in Database**
+
   - File: `src/Models/RefreshToken.php`
   - Hash tokens before storing (use `password_hash()` or `hash()`)
   - Update `create()` method to hash token
@@ -53,13 +52,15 @@
   - **MIGRATION REQUIRED:** Add index on hashed token column
 
 - [ ] **7. Add Environment Variable Validation**
+
   - Create `src/Utils/EnvironmentValidator.php`
-  - Check required vars: DB_*, JWT_SECRET, APP_ENV, ALLOWED_ORIGINS
+  - Check required vars: DB\_\*, JWT_SECRET, APP_ENV, ALLOWED_ORIGINS
   - Run validation in `index.php` before app initialization
   - Fail fast with clear error message if vars missing
   - Document all required environment variables
 
 - [ ] **8. Create Web Server Configuration**
+
   - Create `.htaccess` for Apache with rewrite rules
   - Create `nginx.conf.example` with proper routing
   - Configure proper document root and index file
@@ -67,6 +68,7 @@
   - Test routing with various endpoints
 
 - [ ] **9. Add Health Check Endpoint**
+
   - Create `src/Controllers/HealthController.php`
   - Add `/health` endpoint (GET)
   - Check: database connection, disk space, memory
@@ -85,6 +87,7 @@
 ## ⚠️ HIGH PRIORITY
 
 - [ ] **11. Comprehensive Input Validation**
+
   - Audit all controller methods for validation gaps
   - Use `Validator` class consistently in all controllers
   - Add validation for: numeric IDs, email formats, string lengths
@@ -92,6 +95,7 @@
   - Add SQL injection protection tests
 
 - [ ] **12. Add Request/Response Size Limits**
+
   - Configure max request body size (e.g., 1MB)
   - Add pagination to all list endpoints
   - Implement `limit` and `offset` query parameters
@@ -99,6 +103,7 @@
   - Test with large datasets
 
 - [ ] **13. JWT Security Improvements**
+
   - Add `jti` (JWT ID) claim to tokens
   - Create token blacklist table and model
   - Implement token rotation on refresh
@@ -107,6 +112,7 @@
   - Document token lifecycle
 
 - [ ] **14. Strengthen Password Policy**
+
   - File: `src/Services/AuthService.php`
   - Increase minimum to 12 characters
   - Require: uppercase, lowercase, number, special character
@@ -115,6 +121,7 @@
   - Consider adding password breach checking (HaveIBeenPwned API)
 
 - [ ] **15. Implement Comprehensive Input Sanitization**
+
   - Create `src/Utils/Sanitizer.php`
   - Add HTML entity encoding
   - Add SQL injection prevention
@@ -122,6 +129,7 @@
   - Apply to all user inputs before processing
 
 - [ ] **16. Add Request ID Tracking**
+
   - Create `src/Middleware/RequestIdMiddleware.php`
   - Generate UUID for each request
   - Add to all log entries
@@ -129,6 +137,7 @@
   - Use for debugging and tracing
 
 - [ ] **17. Set Up Automated Database Backups**
+
   - Create backup script
   - Schedule daily backups via cron
   - Store backups securely (S3, encrypted storage)
@@ -147,6 +156,7 @@
 ## 📋 MEDIUM PRIORITY
 
 - [ ] **19. Create API Documentation**
+
   - Install `swagger-php` or similar
   - Add OpenAPI annotations to controllers
   - Generate Swagger/OpenAPI spec
@@ -155,6 +165,7 @@
   - Document all error codes
 
 - [ ] **20. Standardize Error Response Format**
+
   - Audit all error responses across controllers
   - Ensure consistent format: `{success, error, message, timestamp, requestId}`
   - Create error response helper class
@@ -162,6 +173,7 @@
   - Document error response structure
 
 - [ ] **21. Implement Database Migration System**
+
   - Install Phinx or similar migration tool
   - Convert existing SQL files to migrations
   - Add version tracking table
@@ -170,6 +182,7 @@
   - Add to deployment checklist
 
 - [ ] **22. Increase Test Coverage**
+
   - Target: 80%+ code coverage
   - Add tests for all controllers
   - Add tests for all models
@@ -179,6 +192,7 @@
   - Set up CI to run tests automatically
 
 - [ ] **23. Add Monitoring and Metrics**
+
   - Choose APM solution (New Relic, DataDog, etc.)
   - Install monitoring agent
   - Track: response times, error rates, throughput
@@ -187,6 +201,7 @@
   - Document monitoring setup
 
 - [ ] **24. Implement Graceful Shutdown**
+
   - Handle SIGTERM/SIGINT signals
   - Close database connections gracefully
   - Complete in-flight requests before shutdown
@@ -194,6 +209,7 @@
   - Test shutdown behavior
 
 - [ ] **25. Standardize Timestamp Handling**
+
   - Use UTC timestamps everywhere
   - Replace `date('Y-m-d H:i:s')` with centralized function
   - Return ISO 8601 format in API responses
@@ -201,6 +217,7 @@
   - Add timezone conversion utilities if needed
 
 - [ ] **26. Dependency Security Audit**
+
   - Run `composer audit` to check for vulnerabilities
   - Update vulnerable dependencies
   - Add `composer audit` to CI pipeline
@@ -208,6 +225,7 @@
   - Document security update process
 
 - [ ] **27. Improve API Key Security**
+
   - Hash API keys before storing (like passwords)
   - Add API key expiration dates
   - Add API key rotation mechanism
@@ -216,12 +234,14 @@
   - File: `src/Models/User.php`
 
 - [ ] **28. Add Content-Type Validation**
+
   - Create middleware to validate `Content-Type` header
   - Require `application/json` for POST/PUT/PATCH
   - Reject requests with invalid content types
   - Return 415 Unsupported Media Type
 
 - [ ] **29. Refactor Dependency Injection**
+
   - Move container definitions from `index.php` to `config/` directory
   - Create `config/dependencies.php`
   - Create `config/middleware.php`
@@ -241,6 +261,7 @@
 ## 💡 RECOMMENDED IMPROVEMENTS
 
 - [ ] **31. Implement Soft Deletes**
+
   - Add `deleted_at` column to tables
   - Update models to exclude soft-deleted records by default
   - Add `withDeleted()` and `onlyDeleted()` methods
@@ -249,12 +270,14 @@
   - Migration required for all tables
 
 - [ ] **32. Add API Response Compression**
+
   - Enable gzip compression for responses
   - Configure compression middleware
   - Test with large payloads
   - Monitor bandwidth savings
 
 - [ ] **33. Create Deployment Documentation**
+
   - Document server requirements
   - Create deployment checklist
   - Document environment setup
@@ -262,6 +285,7 @@
   - Document scaling strategies
 
 - [ ] **34. Set Up CI/CD Pipeline**
+
   - Create GitHub Actions workflow (or similar)
   - Run tests on every commit
   - Run security checks
@@ -269,18 +293,21 @@
   - Add manual approval for production
 
 - [ ] **35. Add Request Validation Middleware**
+
   - Validate JSON structure before reaching controllers
   - Return 400 for malformed JSON
   - Validate required headers
   - Add request schema validation
 
 - [ ] **36. Implement Email Verification**
+
   - Add `email_verified_at` column to users table
   - Send verification email on registration
   - Create verification endpoint
   - Prevent unverified users from certain actions
 
 - [ ] **37. Add Password Reset Flow**
+
   - Create password reset request endpoint
   - Create password reset token table
   - Send reset email with token
@@ -288,12 +315,14 @@
   - Add token expiration (1 hour)
 
 - [ ] **38. Create Admin Dashboard APIs**
+
   - User management endpoints (list, disable, delete)
   - System metrics endpoints
   - Audit log endpoints
   - Add role-based access control (admin only)
 
 - [ ] **39. Add Webhook Support**
+
   - Allow users to register webhook URLs
   - Send events to webhooks (e.g., protein created)
   - Implement retry logic for failed webhooks
@@ -310,6 +339,7 @@
 ## 📝 DOCUMENTATION TASKS
 
 - [ ] **41. Create Comprehensive README**
+
   - Installation instructions
   - Environment setup
   - Development workflow
@@ -318,17 +348,20 @@
   - API overview
 
 - [ ] **42. Create CONTRIBUTING.md**
+
   - Code style guide
   - Pull request process
   - Testing requirements
   - Commit message format
 
 - [ ] **43. Create SECURITY.md**
+
   - Security policies
   - Vulnerability reporting process
   - Security best practices
 
 - [ ] **44. Create CHANGELOG.md**
+
   - Version history
   - Breaking changes
   - Migration guides
@@ -367,13 +400,13 @@ Before going to production, ensure:
 
 ## 📊 PROGRESS TRACKING
 
-**Critical Issues:** 0/10 completed  
+**Critical Issues:** 1/10 completed  
 **High Priority:** 0/8 completed  
 **Medium Priority:** 0/11 completed  
 **Recommended:** 0/11 completed  
 **Documentation:** 0/5 completed
 
-**Overall Progress:** 0/45 (0%)
+**Overall Progress:** 1/45 (2%)
 
 ---
 
