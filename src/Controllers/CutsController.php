@@ -4,15 +4,18 @@ namespace App\Controllers;
 
 use App\Core\Validator;
 use App\Models\Cut;
+use App\Services\Logger;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use PDOException;
 
 class CutsController {
     private $cutModel;
+    private Logger $logger;
 
-    public function __construct(Cut $cutModel) {
+    public function __construct(Cut $cutModel, Logger $logger) {
         $this->cutModel = $cutModel;
+        $this->logger = $logger;
     }
 
     public function index(Request $request, Response $response): Response {
@@ -66,7 +69,17 @@ class CutsController {
         }
 
         try {
+            
             $id = $this->cutModel->create($name);
+            
+            // Audit log the creation
+            $this->logger->audit('Cut created', [
+                'action' => 'create_cut',
+                'cut_id' => $id,
+                'cut_name' => $name,
+                'user_id' => $request->getAttribute('user_id') ?? null
+            ]);
+            
             $payload = [
                 'success' => true,
                 'message' => 'Cut created successfully',
@@ -114,7 +127,16 @@ class CutsController {
         }
 
         try {
+            
             $this->cutModel->delete($cut_id);
+            
+            // Audit log the deletion
+            $this->logger->audit('Cut deleted', [
+                'action' => 'delete_cut',
+                'cut_id' => $cut_id,
+                'cut_name' => $cut['name'],
+                'user_id' => $request->getAttribute('user_id') ?? null
+            ]);
 
             $payload = [
                 'success' => true,

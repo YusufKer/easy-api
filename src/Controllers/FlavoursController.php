@@ -4,15 +4,18 @@ namespace App\Controllers;
 
 use App\Core\Validator;
 use App\Models\Flavour;
+use App\Services\Logger;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use PDOException;
 
 class FlavoursController {
     private $flavourModel;
+    private Logger $logger;
 
-    public function __construct(Flavour $flavourModel) {
+    public function __construct(Flavour $flavourModel, Logger $logger) {
         $this->flavourModel = $flavourModel;
+        $this->logger = $logger;
     }
 
     public function index(Request $request, Response $response): Response {
@@ -67,6 +70,12 @@ class FlavoursController {
 
         try {
             $id = $this->flavourModel->create($name);
+            $logger->audit('Flavour created', [
+                'action' => 'create_flavour',
+                'flavour_id' => $id,
+                'flavour_name' => $name,
+                'user_id' => $request->getAttribute('user_id') ?? null
+            ]);
             $payload = [
                 'success' => true,
                 'message' => 'Flavour created successfully',
@@ -115,6 +124,13 @@ class FlavoursController {
 
         try {
             $this->flavourModel->delete($flavour_id);
+
+            $this->logger->audit('Flavour deleted', [
+                'action' => 'delete_flavour',
+                'flavour_id' => $flavour_id,
+                'flavour_name' => $flavour['name'],
+                'user_id' => $request->getAttribute('user_id') ?? null
+            ]);
 
             $payload = [
                 'success' => true,

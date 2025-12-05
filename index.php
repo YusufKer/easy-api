@@ -74,16 +74,17 @@ $container->set(ProteinController::class, function($c) {
     return new ProteinController(
         $c->get(Protein::class),
         $c->get(Flavour::class),
-        $c->get(Cut::class)
+        $c->get(Cut::class),
+        $c->get(Logger::class)
     );
 });
 
 $container->set(FlavoursController::class, function($c) {
-    return new FlavoursController($c->get(Flavour::class));
+    return new FlavoursController($c->get(Flavour::class, $c->get(Logger::class));
 });
 
 $container->set(CutsController::class, function($c) {
-    return new CutsController($c->get(Cut::class));
+    return new CutsController($c->get(Cut::class), $c->get(Logger::class));
 });
 
 $container->set(AuthController::class, function($c) {
