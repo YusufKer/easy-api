@@ -70,12 +70,15 @@ class FlavoursController {
 
         try {
             $id = $this->flavourModel->create($name);
-            $logger->audit('Flavour created', [
+            
+            // Audit log the creation
+            $this->logger->audit('Flavour created', [
                 'action' => 'create_flavour',
                 'flavour_id' => $id,
                 'flavour_name' => $name,
                 'user_id' => $request->getAttribute('user_id') ?? null
             ]);
+            
             $payload = [
                 'success' => true,
                 'message' => 'Flavour created successfully',

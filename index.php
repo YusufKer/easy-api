@@ -9,6 +9,7 @@ use App\Controllers\ProteinController;
 use App\Controllers\FlavoursController;
 use App\Controllers\CutsController;
 use App\Controllers\AuthController;
+use App\Controllers\LogsController;
 use App\Models\Protein;
 use App\Models\Flavour;
 use App\Models\Cut;
@@ -89,6 +90,10 @@ $container->set(CutsController::class, function($c) {
 
 $container->set(AuthController::class, function($c) {
     return new AuthController($c->get(AuthService::class), $c->get(Logger::class));
+});
+
+$container->set(LogsController::class, function($c) {
+    return new LogsController($c->get(Logger::class));
 });
 
 // Create Slim App with container
