@@ -17,17 +17,6 @@
   - Apply to general API routes (100 requests per minute)
   - Configure Redis/file-based storage for rate limit counters
 
-- [x] **5. Set Up Structured Logging** ✅ COMPLETED
-
-  - ✅ Installed Monolog logging library
-  - ✅ Created `src/Services/Logger.php` with JSON formatting
-  - ✅ Replaced `error_log()` calls throughout codebase
-  - ✅ Implemented log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
-  - ✅ Configured log rotation (daily, 14 days retention)
-  - ✅ Set up separate logs for: access, errors, security events
-  - ✅ Added structured logging to AuthController, AuthMiddleware, and DebugMiddleware
-  - ✅ Created comprehensive LOGGING_GUIDE.md documentation
-
 - [ ] **6. Hash Refresh Tokens in Database**
 
   - File: `src/Models/RefreshToken.php`
