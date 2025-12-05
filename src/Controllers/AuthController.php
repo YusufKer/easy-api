@@ -3,16 +3,19 @@
 namespace App\Controllers;
 
 use App\Services\AuthService;
+use App\Services\Logger;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 class AuthController
 {
     private AuthService $authService;
+    private Logger $logger;
 
-    public function __construct(AuthService $authService)
+    public function __construct(AuthService $authService, Logger $logger)
     {
         $this->authService = $authService;
+        $this->logger = $logger;
     }
 
     /**
@@ -41,6 +44,11 @@ class AuthController
         $result = $this->authService->register($email, $password, $role);
 
         if ($result['success']) {
+            $this->logger->security('User registered successfully', [
+                'email' => $email,
+                'role' => $role,
+                'user_id' => $result['user']['id'] ?? null
+            ]);
             $response->getBody()->write(json_encode([
                 'success' => true,
                 'message' => 'User registered successfully',
@@ -51,6 +59,11 @@ class AuthController
             ]));
             return $response->withStatus(201)->withHeader('Content-Type', 'application/json');
         }
+
+        $this->logger->warning('User registration failed', [
+            'email' => $email,
+            'error' => $result['error']
+        ]);
 
         $response->getBody()->write(json_encode([
             'success' => false,
@@ -86,6 +99,10 @@ class AuthController
         $result = $this->authService->login($email, $password);
 
         if ($result['success']) {
+            $this->logger->security('User login successful', [
+                'email' => $email,
+                'user_id' => $result['user']['id'] ?? null
+            ]);
             $response->getBody()->write(json_encode([
                 'success' => true,
                 'message' => 'Login successful',
@@ -99,6 +116,11 @@ class AuthController
             ]));
             return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
         }
+
+        $this->logger->warning('Login failed', [
+            'email' => $email,
+            'error' => $result['error']
+        ]);
 
         $response->getBody()->write(json_encode([
             'success' => false,
@@ -132,6 +154,9 @@ class AuthController
         $result = $this->authService->refresh($refreshToken);
 
         if ($result['success']) {
+            $this->logger->security('Token refreshed successfully', [
+                'user_id' => $result['userId'] ?? null
+            ]);
             $response->getBody()->write(json_encode([
                 'success' => true,
                 'message' => 'Token refreshed successfully',
@@ -143,6 +168,10 @@ class AuthController
             ]));
             return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
         }
+
+        $this->logger->warning('Token refresh failed', [
+            'error' => $result['error']
+        ]);
 
         $response->getBody()->write(json_encode([
             'success' => false,
@@ -176,6 +205,9 @@ class AuthController
         $result = $this->authService->logout($refreshToken);
 
         if ($result['success']) {
+            $this->logger->security('User logged out successfully', [
+                'user_id' => $result['userId'] ?? null
+            ]);
             $response->getBody()->write(json_encode([
                 'success' => true,
                 'message' => 'Logged out successfully',
@@ -183,6 +215,10 @@ class AuthController
             ]));
             return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
         }
+
+        $this->logger->warning('Logout failed', [
+            'error' => $result['error']
+        ]);
 
         $response->getBody()->write(json_encode([
             'success' => false,
@@ -246,6 +282,10 @@ class AuthController
         $result = $this->authService->generateApiKey($user['id']);
 
         if ($result['success']) {
+            $this->logger->security('API key generated', [
+                'user_id' => $user['id'],
+                'email' => $user['email'] ?? null
+            ]);
             $response->getBody()->write(json_encode([
                 'success' => true,
                 'message' => 'API key generated successfully',

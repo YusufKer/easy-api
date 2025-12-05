@@ -14,6 +14,7 @@ use App\Models\Flavour;
 use App\Models\Cut;
 use App\Models\User;
 use App\Services\AuthService;
+use App\Services\Logger;
 use App\Utils\DebugLogger;
 use DI\Container;
 
@@ -51,13 +52,21 @@ $container->set(User::class, function($c) {
 });
 
 // Register Services
+$container->set(Logger::class, function() {
+    return new Logger();
+});
+
 $container->set(AuthService::class, function($c) {
     return new AuthService($c->get('db'));
 });
 
 // Register middleware
+$container->set(DebugMiddleware::class, function($c) {
+    return new DebugMiddleware($c->get(Logger::class));
+});
+
 $container->set(AuthMiddleware::class, function($c) {
-    return new AuthMiddleware($c->get('db'), false); // false = authentication required
+    return new AuthMiddleware($c->get('db'), false, $c->get(Logger::class)); // false = authentication required
 });
 
 // Configure controllers with model dependencies
@@ -78,7 +87,7 @@ $container->set(CutsController::class, function($c) {
 });
 
 $container->set(AuthController::class, function($c) {
-    return new AuthController($c->get(AuthService::class));
+    return new AuthController($c->get(AuthService::class), $c->get(Logger::class));
 });
 
 // Create Slim App with container
@@ -87,7 +96,7 @@ $app = AppFactory::create();
 
 // Add debug middleware (only in development)
 if (getenv('APP_ENV') !== 'production') {
-    $app->add(new DebugMiddleware());
+    $app->add($container->get(DebugMiddleware::class));
 }
 
 // Add routing middleware

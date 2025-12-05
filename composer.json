@@ -5,7 +5,8 @@
     "slim/psr7": "^1.8",
     "php-di/php-di": "^7.0",
     "firebase/php-jwt": "^6.11",
-    "ramsey/uuid": "^4.9"
+    "ramsey/uuid": "^4.9",
+    "monolog/monolog": "^3.9"
   },
   "autoload": {
     "psr-4": {
