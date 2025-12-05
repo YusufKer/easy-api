@@ -59,26 +59,15 @@ class Cut
     }
 
     /**
-     * Delete cut and all related records
+     * Delete cut (related records are automatically deleted via CASCADE)
      */
     public function delete(int $id): void
     {
-        $this->db->beginTransaction();
-        
         try {
-            // Delete related records from junction table
-            $deleteProteinCut = 'DELETE FROM protein_cut WHERE cut_id = ?';
-            $stmt1 = $this->db->prepare($deleteProteinCut);
-            $stmt1->execute([$id]);
-            
-            // Delete the cut
-            $deleteCut = 'DELETE FROM cut WHERE id = ?';
-            $stmt2 = $this->db->prepare($deleteCut);
-            $stmt2->execute([$id]);
-            
-            $this->db->commit();
+            $query = 'DELETE FROM cut WHERE id = ?';
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$id]);
         } catch (PDOException $e) {
-            $this->db->rollBack();
             throw $e;
         }
     }

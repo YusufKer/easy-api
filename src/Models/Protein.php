@@ -191,30 +191,15 @@ class Protein
     }
 
     /**
-     * Delete protein and all related records
+     * Delete protein (related records are automatically deleted via CASCADE)
      */
     public function delete(int $id): void
     {
-        $this->db->beginTransaction();
-        
         try {
-            // Delete related records
-            $deleteCuts = 'DELETE FROM protein_cut WHERE protein_id = ?';
-            $stmt1 = $this->db->prepare($deleteCuts);
-            $stmt1->execute([$id]);
-            
-            $deleteFlavours = 'DELETE FROM protein_flavour WHERE protein_id = ?';
-            $stmt2 = $this->db->prepare($deleteFlavours);
-            $stmt2->execute([$id]);
-            
-            // Delete the protein
-            $deleteProtein = 'DELETE FROM protein WHERE id = ?';
-            $stmt3 = $this->db->prepare($deleteProtein);
-            $stmt3->execute([$id]);
-            
-            $this->db->commit();
+            $query = 'DELETE FROM protein WHERE id = ?';
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$id]);
         } catch (PDOException $e) {
-            $this->db->rollBack();
             throw $e;
         }
     }

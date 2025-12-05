@@ -59,26 +59,15 @@ class Flavour
     }
 
     /**
-     * Delete flavour and all related records
+     * Delete flavour (related records are automatically deleted via CASCADE)
      */
     public function delete(int $id): void
     {
-        $this->db->beginTransaction();
-        
         try {
-            // Delete related records from junction table
-            $deleteProteinFlavour = 'DELETE FROM protein_flavour WHERE flavour_id = ?';
-            $stmt1 = $this->db->prepare($deleteProteinFlavour);
-            $stmt1->execute([$id]);
-            
-            // Delete the flavour
-            $deleteFlavour = 'DELETE FROM flavour WHERE id = ?';
-            $stmt2 = $this->db->prepare($deleteFlavour);
-            $stmt2->execute([$id]);
-            
-            $this->db->commit();
+            $query = 'DELETE FROM flavour WHERE id = ?';
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$id]);
         } catch (PDOException $e) {
-            $this->db->rollBack();
             throw $e;
         }
     }
