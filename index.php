@@ -80,7 +80,7 @@ $container->set(ProteinController::class, function($c) {
 });
 
 $container->set(FlavoursController::class, function($c) {
-    return new FlavoursController($c->get(Flavour::class, $c->get(Logger::class));
+    return new FlavoursController($c->get(Flavour::class), $c->get(Logger::class));
 });
 
 $container->set(CutsController::class, function($c) {

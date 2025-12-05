@@ -48,7 +48,9 @@ class AuthMiddleware implements MiddlewareInterface {
                         'email' => $user['email'],
                         'role' => $user['role']
                     ];
-                    $request = $request->withAttribute('user', $safeUser);
+                    $request = $request->withAttribute('user', $safeUser)
+                                       ->withAttribute('user_id', $user['id']);
+                    
                     return $handler->handle($request);
                 } else {
                     if ($this->logger) {
@@ -81,7 +83,9 @@ class AuthMiddleware implements MiddlewareInterface {
                     'email' => $user['email'],
                     'role' => $user['role']
                 ];
-                $request = $request->withAttribute('user', $safeUser);
+                $request = $request->withAttribute('user', $safeUser)
+                                   ->withAttribute('user_id', $user['id']);
+                
                 return $handler->handle($request);
             } else {
                 if ($this->logger) {
