@@ -6,6 +6,7 @@ use App\Core\Validator;
 use App\Models\Protein;
 use App\Models\Flavour;
 use App\Models\Cut;
+use App\Services\Logger;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use PDOException;
@@ -14,11 +15,13 @@ class ProteinController {
     private $proteinModel;
     private $flavourModel;
     private $cutModel;
+    private Logger $logger;
 
-    public function __construct(Protein $proteinModel, Flavour $flavourModel, Cut $cutModel) {
+    public function __construct(Protein $proteinModel, Flavour $flavourModel, Cut $cutModel, Logger $logger) {
         $this->proteinModel = $proteinModel;
         $this->flavourModel = $flavourModel;
         $this->cutModel = $cutModel;
+        $this->logger = $logger;
     }
 
     public function index(Request $request, Response $response): Response {
@@ -105,6 +108,15 @@ class ProteinController {
         
         try {
             $id = $this->proteinModel->create($name);
+            
+            // Audit log the creation
+            $this->logger->audit('Protein created', [
+                'action' => 'create_protein',
+                'protein_id' => $id,
+                'protein_name' => $name,
+                'user_id' => $request->getAttribute('user_id') ?? null
+            ]);
+            
             $payload = [
                 'success' => true,
                 'message' => 'Protein created successfully',
@@ -203,6 +215,16 @@ class ProteinController {
         }
         try {
             $this->proteinModel->addFlavour($protein_id, $flavour_id, $price);
+            
+            // Audit log the association
+            $this->logger->audit('Flavour added to protein', [
+                'action' => 'add_flavour_to_protein',
+                'protein_id' => $protein_id,
+                'flavour_id' => $flavour_id,
+                'price' => $price,
+                'user_id' => $request->getAttribute('user_id') ?? null
+            ]);
+            
             $payload = [
                 'success' => true,
                 'message' => 'Flavour added to protein successfully',
@@ -270,15 +292,28 @@ class ProteinController {
         }
 
         $newPrice = $input['price'];
+        $oldPrice = $proteinFlavour['price'];
 
         try {
             $this->proteinModel->updateFlavourPrice($proteinFlavour['id'], $newPrice);
+            
+            // Audit log the price change
+            $this->logger->audit('Flavour price updated', [
+                'action' => 'update_flavour_price',
+                'protein_id' => $protein_id,
+                'flavour_id' => $flavour_id,
+                'old_price' => $oldPrice,
+                'new_price' => $newPrice,
+                'user_id' => $request->getAttribute('user_id') ?? null
+            ]);
+            
             $payload = [
                 'success' => true,
                 'message' => 'Flavour price updated successfully for protein',
                 'data' => [
                     'protein_id' => $protein_id,
                     'flavour_id' => $flavour_id,
+                    'old_price' => $oldPrice,
                     'new_price' => $newPrice
                 ],
                 'timestamp' => date('Y-m-d H:i:s')
@@ -532,15 +567,28 @@ class ProteinController {
         }
 
         $newPrice = $input['price'];
+        $oldPrice = $proteinCut['price'];
 
         try {
             $this->proteinModel->updateCutPrice($proteinCut['id'], $newPrice);
+            
+            // Audit log the price change
+            $this->logger->audit('Cut price updated', [
+                'action' => 'update_cut_price',
+                'protein_id' => $protein_id,
+                'cut_id' => $cut_id,
+                'old_price' => $oldPrice,
+                'new_price' => $newPrice,
+                'user_id' => $request->getAttribute('user_id') ?? null
+            ]);
+            
             $payload = [
                 'success' => true,
                 'message' => 'Cut price updated successfully for protein',
                 'data' => [
                     'protein_id' => $protein_id,
                     'cut_id' => $cut_id,
+                    'old_price' => $oldPrice,
                     'new_price' => $newPrice
                 ],
                 'timestamp' => date('Y-m-d H:i:s')
@@ -675,6 +723,14 @@ class ProteinController {
         
         try {
             $this->proteinModel->delete($protein_id);
+            
+            // Audit log the deletion
+            $this->logger->audit('Protein deleted', [
+                'action' => 'delete_protein',
+                'protein_id' => $protein_id,
+                'protein_name' => $protein['name'],
+                'user_id' => $request->getAttribute('user_id') ?? null
+            ]);
             
             $payload = [
                 'success' => true,

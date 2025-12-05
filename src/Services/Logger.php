@@ -122,6 +122,18 @@ class Logger
     }
 
     /**
+     * Log an audit event (data changes, price updates, etc.)
+     * This creates an audit trail for compliance and debugging
+     */
+    public function audit(string $action, array $context = []): void
+    {
+        $context['audit_type'] = 'data_change';
+        $context['timestamp'] = date('Y-m-d H:i:s');
+        
+        $this->generalLogger->info("AUDIT: {$action}", $context);
+    }
+
+    /**
      * Log an exception
      */
     public function exception(\Throwable $exception, array $context = []): void

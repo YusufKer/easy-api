@@ -5,6 +5,7 @@ use App\Controllers\ProteinController;
 use App\Controllers\FlavoursController;
 use App\Controllers\CutsController;
 use App\Controllers\AuthController;
+use App\Controllers\LogsController;
 use App\Middleware\AuthMiddleware;
 
 // ============================================
@@ -52,5 +53,9 @@ $app->group('/api', function (RouteCollectorProxy $group) {
     $group->get('/flavours', [FlavoursController::class, 'index']);
     $group->post('/flavours', [FlavoursController::class, 'addFlavour']);
     $group->delete('/flavours/{flavour_id}', [FlavoursController::class, 'deleteFlavour']);
+    
+    // Logs routes (admin/dashboard)
+    $group->get('/logs', [LogsController::class, 'getLogs']);
+    $group->get('/logs/files', [LogsController::class, 'getLogFiles']);
     
 })->add(AuthMiddleware::class);
