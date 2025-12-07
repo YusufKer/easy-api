@@ -1,16 +1,24 @@
 # Database Migrations
 
-This directory contains Phinx migration files for managing database schema changes.
+This directory contains SQL migration files for managing database schema changes.
 
 ## Directory Structure
 
 ```
 db/
-├── migrations/     # Migration files
-└── seeds/         # Database seeder files
+├── sql/           # SQL migration files
+└── seeds/         # Database seeder files (optional)
 ```
 
 ## Quick Start
+
+### Run All Migrations
+
+```bash
+./run-migrations.sh
+# or
+./setup-database.sh
+```
 
 ### Check Migration Status
 
@@ -18,126 +26,65 @@ db/
 ./migrate.sh status
 ```
 
-### Run All Pending Migrations
-
-```bash
-./migrate.sh migrate
-```
-
-### Rollback Last Migration
-
-```bash
-./migrate.sh rollback
-```
-
-### Create New Migration
-
-```bash
-./migrate.sh create AddEmailVerifiedToUsers
-```
-
-## Using Phinx Directly
-
-You can also use Phinx commands directly:
-
-```bash
-# Check status
-vendor/bin/phinx status
-
-# Run migrations
-vendor/bin/phinx migrate
-
-# Rollback
-vendor/bin/phinx rollback
-
-# Create migration
-vendor/bin/phinx create MyNewMigration
-
-# Specify environment
-vendor/bin/phinx migrate -e production
-```
-
-## Environments
-
-- `development` - Local development (default)
-- `testing` - Test database
-- `production` - Production database
-
-Environment settings are configured in `phinx.php` and read from your `.env` file.
+This will list all available SQL migration files in `db/sql/`.
 
 ## Migration Files
 
-Migrations are named with timestamps to ensure proper ordering:
+SQL migrations are located in `db/sql/` and are executed in alphabetical/numerical order:
 
-- `20251205000001_create_user_table.php`
-- `20251205000002_create_protein_table.php`
+- `001_create_user_table.sql`
+- `002_create_protein_table.sql`
+- `003_create_cut_table.sql`
+- `004_create_flavour_table.sql`
 - etc.
 
-## Creating Custom Migrations
+See `db/sql/README.md` for the complete list and detailed documentation.
 
-To create a new migration:
+## Creating New Migrations
 
-```bash
-./migrate.sh create AddColumnToTable
-```
+To add a new migration:
 
-This generates a file in `db/migrations/` with the current timestamp. Edit the file to define your schema changes:
+1. Create a new `.sql` file in `db/sql/` with sequential numbering:
 
-```php
-<?php
-declare(strict_types=1);
+   ```bash
+   # Example: db/sql/011_add_new_table.sql
+   ```
 
-use Phinx\Migration\AbstractMigration;
+2. Write idempotent SQL using `IF NOT EXISTS`:
 
-final class AddColumnToTable extends AbstractMigration
-{
-    public function change(): void
-    {
-        $table = $this->table('your_table');
-        $table->addColumn('new_column', 'string', ['limit' => 255])
-              ->update();
-    }
-}
-```
+   ```sql
+   CREATE TABLE IF NOT EXISTS my_new_table (
+       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+       name VARCHAR(255) NOT NULL,
+       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+   ```
+
+3. Run migrations:
+   ```bash
+   ./run-migrations.sh
+   ```
 
 ## Best Practices
 
 1. **Always test migrations** - Run on development/testing before production
-2. **Use `change()` method** - Phinx can automatically reverse most operations
-3. **Make migrations reversible** - If using `up()`/`down()`, ensure rollback works
-4. **One logical change per migration** - Easier to debug and rollback
+2. **Use IF NOT EXISTS** - Makes migrations idempotent and safe to re-run
+3. **Sequential numbering** - Use 001, 002, 003... for proper ordering
+4. **One logical change per file** - Easier to debug and track changes
 5. **Never modify existing migrations** - Create new ones for changes
 6. **Run migrations as part of deployment** - Automate in CI/CD pipeline
+7. **Backup before production** - Always backup your database first
 
-## Rollback Safety
+## Environments
 
-Before rolling back in production:
+Environment settings are read from your `.env` file:
 
-1. Backup your database
-2. Test rollback in staging environment
-3. Verify data integrity after rollback
-
-## Troubleshooting
-
-### Migration Already Exists
-
-If you see "migration already exists", check the `phinxlog` table:
-
-```sql
-SELECT * FROM phinxlog;
-```
-
-### Reset Migrations (Development Only)
-
-⚠️ **WARNING: This will drop all tables!**
-
-```bash
-./migrate.sh rollback-all
-./migrate.sh migrate
-```
+- `DB_HOST` - Database host
+- `DB_NAME` - Database name
+- `DB_USER` - Database user
+- `DB_PASSWORD` - Database password
+- `DB_PORT` - Database port (default: 3306)
 
 ## Learn More
 
-- [Phinx Documentation](https://book.cakephp.org/phinx/0/en/index.html)
-- [Writing Migrations](https://book.cakephp.org/phinx/0/en/migrations.html)
-- [Database Seeding](https://book.cakephp.org/phinx/0/en/seeding.html)
+For detailed information about SQL migrations, see `db/sql/README.md`.

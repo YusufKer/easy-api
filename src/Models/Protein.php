@@ -110,7 +110,7 @@ class Protein
      */
     public function getProteinFlavour(int $proteinId, int $flavourId): ?array
     {
-        $query = 'SELECT id FROM protein_flavour WHERE protein_id = ? AND flavour_id = ?';
+        $query = 'SELECT id, price FROM protein_flavour WHERE protein_id = ? AND flavour_id = ?';
         $stmt = $this->db->prepare($query);
         $stmt->execute([$proteinId, $flavourId]);
         $result = $stmt->fetch();
@@ -163,7 +163,7 @@ class Protein
      */
     public function getProteinCut(int $proteinId, int $cutId): ?array
     {
-        $query = 'SELECT id FROM protein_cut WHERE protein_id = ? AND cut_id = ?';
+        $query = 'SELECT id, price FROM protein_cut WHERE protein_id = ? AND cut_id = ?';
         $stmt = $this->db->prepare($query);
         $stmt->execute([$proteinId, $cutId]);
         $result = $stmt->fetch();
