@@ -1,63 +1,80 @@
-# Migration System Implementation Complete! ✅
+# Migration System - Now Using Plain SQL! ✅
 
-## What Has Been Set Up
+## ⚠️ IMPORTANT: Phinx Has Been Removed
 
-### 1. **Phinx Migration Tool Installed**
+This project has been migrated from Phinx to plain SQL migration files for simplicity and better control.
 
-- Package: `robmorgan/phinx` version 0.16.10
-- Added to `composer.json` as dev dependency
+## What Has Changed
 
-### 2. **Configuration File Created**
+### 1. **Plain SQL Migration Files**
 
-- File: `phinx.php`
-- Reads database credentials from `.env` file
-- Supports three environments: development, testing, production
-
-### 3. **Migration Files Created**
-
-All your existing SQL files have been converted to Phinx migrations:
+All migrations are now simple SQL files in `db/sql/`:
 
 ```
-db/migrations/
-├── 20251205000001_create_user_table.php
-├── 20251205000002_create_protein_table.php
-├── 20251205000003_create_cut_table.php
-├── 20251205000004_create_flavour_table.php
-├── 20251205000005_create_protein_cut_table.php
-├── 20251205000006_create_protein_flavour_table.php
-└── 20251205000007_create_refresh_token_table.php
+db/sql/
+├── 001_create_user_table.sql
+├── 002_create_protein_table.sql
+├── 003_create_cut_table.sql
+├── 004_create_flavour_table.sql
+├── 005_create_protein_cut_table.sql
+├── 006_create_protein_flavour_table.sql
+├── 007_create_refresh_token_table.sql
+├── 008_create_order_table.sql
+├── 009_create_order_item_table.sql
+└── 010_create_order_status_history_table.sql
 ```
 
-### 4. **Helper Scripts Created**
+### 2. **Simple Migration Runner**
 
-- `migrate.sh` - Convenient wrapper for common migration tasks
-- Made executable with proper permissions
+- `setup-database.sh` - Main migration script (runs all SQL files in order)
+- `migrate.sh` - Compatibility wrapper (redirects to setup-database.sh)
+- `run-migrations.sh` - Alternative simple runner
 
-### 5. **Documentation Created**
+### 3. **Phinx Removed**
 
-- `db/README.md` - Complete guide to using migrations
+- `robmorgan/phinx` removed from composer.json
+- 17 dependencies removed (CakePHP, Symfony packages, etc.)
+- Old Phinx migration files remain in `db/migrations/` for reference
 
-## 📋 Current Status
+### 4. **Documentation**
 
-Your database **already has tables** from the old SQL files. You have two options:
+- `db/sql/README.md` - Complete guide to SQL migrations
 
-### Option A: Mark Existing Migrations as Complete (Recommended)
+## 📋 How to Use
 
-This tells Phinx that these migrations are already applied:
+### Run All Migrations
 
 ```bash
-# Manually insert into phinxlog table
-mysql -u your_user -p easybraai << EOF
-INSERT INTO phinxlog (version, migration_name, start_time, end_time, breakpoint) VALUES
-(20251205000001, 'CreateUserTable', NOW(), NOW(), 0),
-(20251205000002, 'CreateProteinTable', NOW(), NOW(), 0),
-(20251205000003, 'CreateCutTable', NOW(), NOW(), 0),
-(20251205000004, 'CreateFlavourTable', NOW(), NOW(), 0),
-(20251205000005, 'CreateProteinCutTable', NOW(), NOW(), 0),
-(20251205000006, 'CreateProteinFlavourTable', NOW(), NOW(), 0),
-(20251205000007, 'CreateRefreshTokenTable', NOW(), NOW(), 0);
-EOF
+./setup-database.sh
+# or
+./migrate.sh
 ```
+
+### Check Migration Status
+
+```bash
+./migrate.sh status
+# or manually
+ls -1 db/sql/*.sql
+```
+
+### Create a New Migration
+
+1. Create a new SQL file with sequential numbering:
+   ```bash
+   nano db/sql/011_add_new_feature.sql
+   INSERT INTO phinxlog (version, migration_name, start_time, end_time, breakpoint) VALUES
+   (20251205000001, 'CreateUserTable', NOW(), NOW(), 0),
+   (20251205000002, 'CreateProteinTable', NOW(), NOW(), 0),
+   (20251205000003, 'CreateCutTable', NOW(), NOW(), 0),
+   (20251205000004, 'CreateFlavourTable', NOW(), NOW(), 0),
+   (20251205000005, 'CreateProteinCutTable', NOW(), NOW(), 0),
+   (20251205000006, 'CreateProteinFlavourTable', NOW(), NOW(), 0),
+   (20251205000007, 'CreateRefreshTokenTable', NOW(), NOW(), 0);
+   EOF
+   ```
+
+````
 
 Or run this PHP script:
 
@@ -87,7 +104,7 @@ foreach (\$migrations as \$m) {
 }
 echo \"All migrations marked as complete!\n\";
 "
-```
+````
 
 ### Option B: Fresh Start (Development Only)
 

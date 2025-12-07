@@ -1,9 +1,8 @@
 #!/bin/bash
-# Migration helper script for easy-api
-# This script provides common Phinx migration commands
+# Database migration script - now using plain SQL files
+# This is a compatibility wrapper that redirects to the new setup-database.sh
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PHINX="$SCRIPT_DIR/vendor/bin/phinx"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -11,136 +10,44 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Function to print colored output
-print_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+echo -e "${YELLOW}Note: This project now uses plain SQL migrations instead of Phinx.${NC}"
+echo ""
 
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
+# If migrate or no command, run the SQL migrations
+if [ "$1" == "migrate" ] || [ -z "$1" ]; then
+    echo "Running SQL migrations..."
+    exec "$SCRIPT_DIR/setup-database.sh"
+elif [ "$1" == "status" ]; then
+    echo "To check database status, connect to MySQL and run: SHOW TABLES;"
+    echo "SQL files are located in: db/sql/"
+    ls -1 db/sql/*.sql 2>/dev/null | sort
+elif [ "$1" == "help" ] || [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
+    cat << 'HELP'
+Database Migration Script
+=========================
 
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Check if Phinx is installed
-if [ ! -f "$PHINX" ]; then
-    print_error "Phinx not found. Please run 'composer install' first."
-    exit 1
-fi
-
-# Display help
-show_help() {
-    cat << EOF
-Migration Helper Script
-=======================
-
-Usage: ./migrate.sh [command] [options]
+This project uses plain SQL files for migrations.
+Migration files are located in: db/sql/
 
 Commands:
-    status              Show migration status
-    migrate             Run all pending migrations
-    rollback            Rollback the last migration
-    rollback-all        Rollback all migrations
-    create <name>       Create a new migration file
-    seed                Run database seeders
+    migrate             Run all SQL migrations (default)
+    status              List available migration files
     help                Show this help message
 
-Options:
-    -e, --env <env>     Specify environment (development, testing, production)
-                        Default: development
+To run migrations:
+    ./migrate.sh
+    # or
+    ./setup-database.sh
 
-Examples:
-    ./migrate.sh status
-    ./migrate.sh migrate
-    ./migrate.sh migrate -e production
-    ./migrate.sh rollback
-    ./migrate.sh create AddEmailVerifiedToUsers
-    ./migrate.sh seed
+To add a new migration:
+    1. Create a new .sql file in db/sql/ with sequential numbering
+       Example: db/sql/011_add_new_table.sql
+    2. Run ./migrate.sh to apply it
 
-EOF
-}
-
-# Parse command and environment
-COMMAND=${1:-help}
-ENVIRONMENT="development"
-
-# Parse options
-shift
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        -e|--env)
-            ENVIRONMENT="$2"
-            shift 2
-            ;;
-        *)
-            MIGRATION_NAME="$1"
-            shift
-            ;;
-    esac
-done
-
-# Execute commands
-case $COMMAND in
-    status)
-        print_info "Checking migration status for environment: $ENVIRONMENT"
-        $PHINX status -e $ENVIRONMENT
-        ;;
-    migrate)
-        print_info "Running migrations for environment: $ENVIRONMENT"
-        $PHINX migrate -e $ENVIRONMENT
-        if [ $? -eq 0 ]; then
-            print_info "Migrations completed successfully"
-        else
-            print_error "Migration failed"
-            exit 1
-        fi
-        ;;
-    rollback)
-        print_warning "Rolling back last migration for environment: $ENVIRONMENT"
-        $PHINX rollback -e $ENVIRONMENT
-        if [ $? -eq 0 ]; then
-            print_info "Rollback completed successfully"
-        else
-            print_error "Rollback failed"
-            exit 1
-        fi
-        ;;
-    rollback-all)
-        print_warning "Rolling back ALL migrations for environment: $ENVIRONMENT"
-        read -p "Are you sure? This will drop all tables! (yes/no): " CONFIRM
-        if [ "$CONFIRM" == "yes" ]; then
-            $PHINX rollback -e $ENVIRONMENT -t 0
-            if [ $? -eq 0 ]; then
-                print_info "All migrations rolled back successfully"
-            else
-                print_error "Rollback failed"
-                exit 1
-            fi
-        else
-            print_info "Rollback cancelled"
-        fi
-        ;;
-    create)
-        if [ -z "$MIGRATION_NAME" ]; then
-            print_error "Migration name is required"
-            echo "Usage: ./migrate.sh create <MigrationName>"
-            exit 1
-        fi
-        print_info "Creating new migration: $MIGRATION_NAME"
-        $PHINX create $MIGRATION_NAME
-        ;;
-    seed)
-        print_info "Running seeders for environment: $ENVIRONMENT"
-        $PHINX seed:run -e $ENVIRONMENT
-        ;;
-    help)
-        show_help
-        ;;
-    *)
-        print_error "Unknown command: $COMMAND"
-        show_help
-        exit 1
-        ;;
-esac
+For more details, see: db/sql/README.md
+HELP
+else
+    echo -e "${RED}Unknown command: $1${NC}"
+    echo "Run './migrate.sh help' for usage information"
+    exit 1
+fi
