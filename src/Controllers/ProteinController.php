@@ -50,6 +50,7 @@ class ProteinController {
             $flavours = $this->proteinModel->getFlavours($protein['id']);
             
             $completeList[$proteinName] = [
+                'id' => (string)$protein['id'],
                 'cuts' => array_map(function($cut) {
                     return [
                         'id' => (string)$cut['id'],
