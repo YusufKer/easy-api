@@ -103,6 +103,7 @@ class AuthController
                 'email' => $email,
                 'user_id' => $result['user']['id'] ?? null
             ]);
+
             $response->getBody()->write(json_encode([
                 'success' => true,
                 'message' => 'Login successful',
