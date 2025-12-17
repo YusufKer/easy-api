@@ -38,6 +38,46 @@ class ProteinController {
         return $response->withHeader('Content-Type', 'application/json');
     }
 
+    public function getCompleteList(Request $request, Response $response): Response {
+        $proteins = $this->proteinModel->findAll();
+        
+        $completeList = [];
+        
+        foreach ($proteins as $protein) {
+            $proteinName = strtolower($protein['name']);
+            
+            $cuts = $this->proteinModel->getCuts($protein['id']);
+            $flavours = $this->proteinModel->getFlavours($protein['id']);
+            
+            $completeList[$proteinName] = [
+                'cuts' => array_map(function($cut) {
+                    return [
+                        'id' => (string)$cut['id'],
+                        'name' => $cut['name'],
+                        'price' => (float)$cut['price']
+                    ];
+                }, $cuts),
+                'flavours' => array_map(function($flavour) {
+                    return [
+                        'id' => (string)$flavour['id'],
+                        'name' => $flavour['name'],
+                        'price' => (float)$flavour['price']
+                    ];
+                }, $flavours)
+            ];
+        }
+        
+        $payload = [
+            'success' => true,
+            'message' => 'Complete protein list retrieved successfully',
+            'data' => $completeList,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+        
+        $response->getBody()->write(json_encode($payload));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
     public function getById(Request $request, Response $response, array $args): Response {
         $protein_id = $args['protein_id'];
         

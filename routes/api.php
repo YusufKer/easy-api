@@ -26,6 +26,9 @@ $app->group('/auth', function (RouteCollectorProxy $group) {
     $group->post('/api-key', [AuthController::class, 'generateApiKey']);
 })->add(AuthMiddleware::class);
 
+
+$app->get('/api/protein/complete', [ProteinController::class, 'getCompleteList']);
+
 // ============================================
 // PROTECTED API ROUTES (require authentication)
 // ============================================
