@@ -18,6 +18,8 @@ All migration files are located in `db/sql/` and are executed in alphabetical or
 - `008_create_order_table.sql` - Customer orders
 - `009_create_order_item_table.sql` - Order line items with price snapshots
 - `010_create_order_status_history_table.sql` - Order status change audit trail
+- `011_create_user_details_table.sql` - User personal details (first name, last name, phone)
+- `012_create_user_address.sql` - User addresses with support for multiple address types (billing/shipping)
 
 ## Running Migrations
 
@@ -52,7 +54,7 @@ cat db/sql/*.sql | mysql -u your_user -p your_database
 1. Create a new `.sql` file in `db/sql/` with a sequential number prefix:
 
    ```
-   011_add_new_feature.sql
+   013_add_new_feature.sql
    ```
 
 2. Write your SQL with `CREATE TABLE IF NOT EXISTS` or `ALTER TABLE` statements
