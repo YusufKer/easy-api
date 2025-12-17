@@ -193,4 +193,22 @@ class User
         $result = $stmt->fetch();
         return $result ?: null;
     }
+
+    public function getUserDetails(int $userId): ?array {
+        $query = 'SELECT * FROM user_details WHERE user_id = ?';
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
+    public function getUserAddresses(int $userId): ?array {
+        $query = 'SELECT * FROM user_address where user_id = ?';
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$userId]);
+        $result = $stmt->fetchAll();
+        return $result ?: null;
+    }
+
+
 }
