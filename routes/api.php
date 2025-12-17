@@ -7,6 +7,7 @@ use App\Controllers\CutsController;
 use App\Controllers\AuthController;
 use App\Controllers\LogsController;
 use App\Middleware\AuthMiddleware;
+use App\Controllers\UsersController;
 
 // ============================================
 // PUBLIC AUTH ROUTES (no authentication)
@@ -60,5 +61,8 @@ $app->group('/api', function (RouteCollectorProxy $group) {
     // Logs routes (admin/dashboard)
     $group->get('/logs', [LogsController::class, 'getLogs']);
     $group->get('/logs/files', [LogsController::class, 'getLogFiles']);
+
+    // Users routes
+    $group->get('/users/{user_id}', [UsersController::class, 'index']);
     
 })->add(AuthMiddleware::class);
