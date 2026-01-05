@@ -8,6 +8,7 @@ use App\Controllers\AuthController;
 use App\Controllers\LogsController;
 use App\Middleware\AuthMiddleware;
 use App\Controllers\UsersController;
+use App\Controllers\OrdersController;
 
 // ============================================
 // PUBLIC AUTH ROUTES (no authentication)
@@ -64,5 +65,8 @@ $app->group('/api', function (RouteCollectorProxy $group) {
 
     // Users routes
     $group->get('/users/{user_id}', [UsersController::class, 'index']);
+
+    // Orders routes
+    $group->post("/orders", [OrdersController::class, 'createOrder']);
     
 })->add(AuthMiddleware::class);

@@ -84,7 +84,7 @@ class Protein
         return $stmt->fetchAll();
     }
 
-    /**
+    /**b
      * Check if flavour is linked to protein
      */
     public function hasFlavour(int $proteinId, int $flavourId): bool

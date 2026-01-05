@@ -11,10 +11,12 @@ use App\Controllers\CutsController;
 use App\Controllers\AuthController;
 use App\Controllers\LogsController;
 use App\Controllers\UsersController;
+use App\Controllers\OrdersController;
 use App\Models\Protein;
 use App\Models\Flavour;
 use App\Models\Cut;
 use App\Models\User;
+use App\Models\Order;
 use App\Services\AuthService;
 use App\Services\Logger;
 use App\Utils\DebugLogger;
@@ -51,6 +53,10 @@ $container->set(Cut::class, function($c) {
 
 $container->set(User::class, function($c) {
     return new User($c->get('db'));
+});
+
+$container->set(Order::class, function($c) {
+    return new Order($c->get('db'));
 });
 
 // Register Services
@@ -99,6 +105,15 @@ $container->set(LogsController::class, function($c) {
 
 $container->set(UsersController::class, function($c) {
     return new UsersController($c->get(User::class), $c->get(Logger::class));
+});
+
+$container->set(OrdersController::class, function($c) {
+    return new OrdersController(
+        $c->get(Order::class), 
+        $c->get(Protein::class),
+        $c->get(Flavour::class),
+        $c->get(Cut::class),
+        $c->get(Logger::class));
 });
 
 // Create Slim App with container
