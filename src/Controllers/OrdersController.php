@@ -13,14 +13,10 @@ class OrdersController {
     private $orderModel;
     private Logger $logger;
     private $proteinModel;
-    private $flavourModel;
-    private $cutModel;
 
-    public function __construct($orderModel, $proteinModel, $flavourModel, $cutModel, Logger $logger) {
+    public function __construct($orderModel, $proteinModel, Logger $logger) {
         $this->orderModel = $orderModel;
         $this->proteinModel = $proteinModel;
-        $this->flavourModel = $flavourModel;
-        $this->cutModel = $cutModel;
         $this->logger = $logger;
     }
 
@@ -29,9 +25,7 @@ class OrdersController {
 
         // Validate input 
         $validator = new OrderValidator(
-            $this->proteinModel,
-            $this->flavourModel,
-            $this->cutModel
+            $this->proteinModel
         );
 
         foreach ($input as $order_item) {

@@ -111,8 +111,6 @@ $container->set(OrdersController::class, function($c) {
     return new OrdersController(
         $c->get(Order::class), 
         $c->get(Protein::class),
-        $c->get(Flavour::class),
-        $c->get(Cut::class),
         $c->get(Logger::class));
 });
 
